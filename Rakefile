@@ -38,10 +38,15 @@ task :require do
   require 'active_support/core_ext/module'
   require 'active_support/core_ext/module/delegation'
 
+
+  require 'action_client/config'
+
   if ActionClient::Config::Cache.debug?
     require 'pry'
     require 'pry-byebug'
   end
+
+  require 'action_client/cli'
 end
 
 task console: :require do
