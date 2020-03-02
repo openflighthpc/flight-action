@@ -27,32 +27,34 @@
 # https://github.com/openflighthpc/action-client-ruby
 #===============================================================================
 
-task :require do
-  $: << File.expand_path('lib', __dir__)
-  ENV['BUNDLE_GEMFILE'] ||= File.join(__dir__, 'Gemfile')
+require 'json_api_client'
 
-  require 'rubygems'
-  require 'bundler/setup'
+module ActionClient
+  class BaseRecord < JsonApiClient::Resource
+    def self.inherited(klass)
+      resolve_custom_type klass.resource_name, klass
+    end
 
-  require 'active_support/core_ext/string'
-  require 'active_support/core_ext/module'
-  require 'active_support/core_ext/module/delegation'
+    def self.resource_name
+      @table_name ||= self.to_s.demodulize.chomp('Record').downcase.pluralize
+    end
 
-
-  require 'action_client/config'
-
-  if ActionClient::Config::Cache.debug?
-    require 'pry'
-    require 'pry-byebug'
+    self.site = Config::Cache.base_url
+    self.connection.faraday.authorization :Bearer, Config::Cache.jwt_token
   end
 
-  require 'action_client/records'
-  require 'action_client/cli'
-end
+  class NodeRecord < BaseRecord
+    property :name
+  end
 
-task console: :require do
-  require 'pry'
-  require 'pry-byebug'
-  binding.pry
+  class GroupRecord < BaseRecord
+    property :name
+  end
+
+  class CommandRecord < BaseRecord
+    property :name
+    property :summary
+    property :description
+  end
 end
 

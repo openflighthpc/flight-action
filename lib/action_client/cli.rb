@@ -93,101 +93,14 @@ module ActionClient
       SYNTAX
     end
 
-    # command 'list-templates' do |c|
-    #   cli_syntax(c)
-    #   c.summary = 'Return all the available templates'
-    #   action(c, Commands::List, method: :templates)
-    # end
-
-    # command 'list-nodes' do |c|
-    #   cli_syntax(c)
-    #   c.summary = 'Return all the available nodes'
-    #   action(c, Commands::List, method: :nodes)
-    # end
-
-    # command 'list-groups' do |c|
-    #   cli_syntax(c)
-    #   c.summary = 'Return all the available groups'
-    #   action(c, Commands::List, method: :groups)
-    # end
-
-    # command 'template' do |c|
-    #   cli_syntax(c)
-    #   c.summary = 'View and manage a template resource'
-    #   c.sub_command_group = true
-    # end
-
-    # command 'template show' do |c|
-    #   cli_syntax(c, 'NAME')
-    #   c.summary = 'View the content of a template'
-    #   action(c, Commands::Template, method: :show)
-    # end
-
-    # command 'template create' do |c|
-    #   cli_syntax(c, 'NAME [FILE_PATH]')
-    #   c.summary = 'Upload a new template with a defined name'
-    #   c.description = <<~DESC.chomp
-    #     Create a new template entry from an existing file. The NAME
-    #     must be alphanumeic but may contain: '.', '-', and '_'.
-    #     File extensions are not treated as part of the NAME and
-    #     can be ommitted.
-
-    #     The FILE_PATH maybe absolute or relative to the current working
-    #     directory. An empty file is uploaded if it is omitted.
-    #   DESC
-    #   action(c, Commands::Template, method: :create)
-    # end
-
-    # command 'template update' do |c|
-    #   cli_syntax(c, 'NAME PATH')
-    #   c.summary = 'Replace a template with a local file'
-    #   action(c, Commands::Template, method: :update)
-    # end
-
-    # command 'template edit' do |c|
-    #   cli_syntax(c, 'NAME')
-    #   c.summary = 'Edit a template through the system edittor'
-    #   action(c, Commands::Template, method: :edit)
-    # end
-
-    # command 'template delete' do |c|
-    #   cli_syntax(c, 'NAME')
-    #   c.summary = 'Permanently destroy a template'
-    #   action(c, Commands::Template, method: :delete)
-    # end
-
-    # command 'download' do |c|
-    #   cli_syntax(c, 'NAME[,NAME,..]')
-    #   c.summary = 'Download the rendered files from the server'
-    #   c.description = <<~DESC.chomp
-    #     Download the rendered files for the given templates and contexts.
-    #     Multiple templates can be selected by repeating the NAME argument. The
-    #     NAME argument should match a template (see: 'template create --help').
-    #     Multiple templates can be rendered by repeating the NAME argument as a
-    #     comma separated list.
-
-    #     All downloads are contextually dependent and must specify one of the
-    #     cluster/group/node flags. Nothing will be downloaded without one of these
-    #     flags as the context is required.
-
-    #     By default all files are downloaded to subdirectories within the current
-    #     working directory. The name of the subdirectories depends on the context:
-    #       - cluster:  ./cluster
-    #       - groups:   ./groups/<group-name>
-    #       - nodes:    ./nodes/<node-name>
-    #   DESC
-    #   c.option '-n', '--nodes NODE_NAME[,NODE_NAME,..]',
-    #     'Render the templates in the nodes context'
-    #   c.option '-g', '--groups NODE_NAME[,NODE_NAME,..]',
-    #     'Render the templates in the groups context'
-    #   c.option '-N', '--nodes-in GROUP_NAME,[GROUP_NAME,..]',
-    #     'Render the templates for all the node contexts within the given groups'
-    #   c.option '-c', '--cluster', 'Render the templates in the cluster context'
-    #   c.option '-o', '--output DIRECTORY',
-    #     'Specify the directory to save the templates in'
-    #   c.option '--force', 'Replace any existing file downloads'
-    #   action(c, Commands::Download)
-    # end
+    CommandRecord.all.each do |cmd|
+      command cmd.name do |c|
+        cli_syntax(c, 'NAME')
+        c.summary = cmd.summary
+        c.description = cmd.description
+        c.option '-g', '--groups', 'Run over the group of nodes given by NAME'
+      end
+    end
   end
 end
 
