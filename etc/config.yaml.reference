@@ -1,0 +1,27 @@
+# =============================================================================
+# Leave this file in place as a reference.
+# NOTE: Copying this file into place will result in all keys being set to
+# empty string.
+#
+# The actual configuration file should be stored as:
+# etc/config.yaml
+# =============================================================================
+
+# =============================================================================
+# App Base Url [REQUIRED]
+# Specify the location where the API server is being hosted
+# =============================================================================
+base_url:
+
+# =============================================================================
+# JWT Token [REQUIRED]
+# Specify your authorization token to be used with the request. Contact your
+# system administrator to be issued with a token
+# =============================================================================
+jwt_token:
+
+# =============================================================================
+# Debugging Mode [Development Purposes Only]
+# Enable the development tools for debugging purposes
+# =============================================================================
+debug:
