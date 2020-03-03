@@ -53,13 +53,38 @@ As the application needs the upstream service for the commands, it is possible f
 flight-action
 > flight-action: Failed to open TCP connection to localhost:6304 (Connection refused - connect(2) for "localhost" port 6304
 
-# Authroization errors indicate there is an issue with the 'jwt_token` parameter
+# Authorization errors indicate there is an issue with the 'jwt_token` config value
 # Fix: Regenerate the token and try again
 flight-action
 > flight-action: You are not authorized to perform this action
 
 # NOTE: Developers Only
 # The --trace flag does not work for these types of errors as ARGV is not parsed until a command is executed
+```
+
+A detailed walk through of the commands is not possible as they are defined dynamically in content. This application does not ship with any default commands. The following guide illustrates in general how to use the CLI to perform various actions. The `<cmd>` is a stand-in for the name of the command being executed.
+
+```
+# Run a command for a single node
+flight-action <cmd> slave1
+
+# Run a command over mutliple nodes
+# (Requires exploding groups support - contact your server administrator)
+flight-action <cmd> --group node1,node3,slave[01-10]
+
+# Run a command over all the nodes in a group
+# (Requires named groups support - contact your server administrator)
+flight-action <cmd> --group gpus
+
+# Save the outputs in a directory for a node
+flight-action <cmd> slave1 -output /path/to/dir
+# Creates:
+#   /path/to/dir/slave.status
+#   /path/to/dir/slave.stderr
+#   /path/to/dir/slave.stdout
+
+# Similarly save the output for a group of nodes
+flight-action <cmd> --group gpus -o relative/path/from/working/dir
 ```
 
 # Contributing
