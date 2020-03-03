@@ -79,25 +79,42 @@ module ActionClient
       end
     end
 
-    def self.action(command, klass, method: :run!)
-      command.action do |args, options|
-        hash = options.__hash__
-        hash.delete(:trace)
-        with_error_handling do
-          if hash.empty?
-            klass.public_send(method, *args)
-          else
-            klass.public_send(method, *args, **hash)
-          end
-        end
-      end
-    end
-
     def self.cli_syntax(command, args_str = '')
       command.hidden = true if command.name.split.length > 1
       command.syntax = <<~SYNTAX.chomp
         #{program(:name)} #{command.name} #{args_str}
       SYNTAX
+    end
+
+    def self.run_remote_action(cmd_id, context_id, group:)
+      with_error_handling do
+        # Build the associated objects for the request
+        command = CommandRecord.new(id: cmd_id)
+        context = (group ? GroupRecord : NodeRecord).new(id: context_id)
+
+        # Create the ticket (and run the jobs)
+        ticket = TicketRecord.create(relationships: { command: command, context: context })
+
+        ticket.jobs.each do |job|
+          puts <<~JOB
+
+            NODE: #{job.node.name}
+            STATUS: #{job.status}
+            STDOUT:
+            #{job.stdout}
+
+            STDERR:
+            #{job.stderr}
+          JOB
+        end
+
+        # Assume missing jobs is because the context is missing
+        # Technically the ticket was created successfully regardless and therefore the API didn't error
+        # It is possible the command is missing, but this would require the CLI to be stale
+        if ticket.jobs.empty?
+          raise ClientError, "Could not find '#{context_id}'"
+        end
+      end
     end
 
     begin
@@ -107,7 +124,10 @@ module ActionClient
             cli_syntax(c, 'NAME')
             c.summary = cmd.summary
             c.description = cmd.description
-            c.option '-g', '--groups', 'Run over the group of nodes given by NAME'
+            c.option '-g', '--group', 'Run over the group of nodes given by NAME'
+            c.action do |args, opts|
+              run_remote_action(cmd.name, args.first, group: opts.group)
+            end
           end
         end
       end

@@ -36,7 +36,7 @@ module ActionClient
     end
 
     def self.resource_name
-      @table_name ||= self.to_s.demodulize.chomp('Record').downcase.pluralize
+      @resource_name ||= self.to_s.demodulize.chomp('Record').downcase.pluralize
     end
 
     self.site = Config::Cache.base_url
@@ -55,6 +55,21 @@ module ActionClient
     property :name
     property :summary
     property :description
+  end
+
+  class JobRecord < BaseRecord
+    property :stdout
+    property :stderr
+    property :status
+
+    belongs_to :node, shallow_path: true
+    belongs_to :ticket, shallow_path: true
+  end
+
+  class TicketRecord < BaseRecord
+    belongs_to :command, shallow_path: true
+    belongs_to :context, shallow_path: true
+    has_many :nodes
   end
 end
 
