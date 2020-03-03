@@ -86,7 +86,7 @@ module ActionClient
       SYNTAX
     end
 
-    def self.run_remote_action(cmd_id, context_id, group:)
+    def self.run_remote_action(cmd_id, context_id, group: false, output: nil)
       with_error_handling do
         # Build the associated objects for the request
         command = CommandRecord.new(id: cmd_id)
@@ -96,16 +96,35 @@ module ActionClient
         ticket = TicketRecord.create(relationships: { command: command, context: context })
 
         ticket.jobs.each do |job|
-          puts <<~JOB
+          if output
+            FileUtils.mkdir_p(output)
 
-            NODE: #{job.node.name}
-            STATUS: #{job.status}
-            STDOUT:
-            #{job.stdout}
+            # Save Status
+            path = File.expand_path("#{job.node.id}.status", output)
+            File.write(path, job.status)
 
-            STDERR:
-            #{job.stderr}
-          JOB
+            # Save Stdout
+            path = File.expand_path("#{job.node.id}.stdout", output)
+            File.write(path, job.stdout)
+
+            # Save Stderr
+            path = File.expand_path("#{job.node.id}.stderr", output)
+            File.write(path, job.stderr)
+
+            # Print the exit status
+            puts "#{job.node.id}: #{job.status}"
+          else
+            puts <<~JOB
+
+              NODE: #{job.node.name}
+              STATUS: #{job.status}
+              STDOUT:
+              #{job.stdout}
+
+              STDERR:
+              #{job.stderr}
+            JOB
+          end
         end
 
         # Assume missing jobs is because the context is missing
@@ -125,8 +144,11 @@ module ActionClient
             c.summary = cmd.summary
             c.description = cmd.description
             c.option '-g', '--group', 'Run over the group of nodes given by NAME'
+            c.option '-o', '--output DIRECTORY',
+                     'Save the results within the given directory'
             c.action do |args, opts|
-              run_remote_action(cmd.name, args.first, group: opts.group)
+              hash_opts = opts.__hash__.tap { |h| h.delete(:trace) }
+              run_remote_action(cmd.name, args.first, **hash_opts)
             end
           end
         end
