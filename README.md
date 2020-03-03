@@ -36,7 +36,31 @@ vi etc/config.yaml
 
 ## Basic Usage
 
-WIP
+The list of available commands is retrieved each time the application is called automatically. This means no cache needs to be established before using the application. Instead the command line can be called directly:
+
+```
+flight-action
+```
+
+As the application needs the upstream service for the commands, it is possible for the base command to error. This could be for various reasons as described by the error message. The following are common errors and suggestions how to rectify them.
+
+```
+# NOTE: The following error messages have not been standardized and may change without notice
+
+# Connection errors indicate the upstream server isn't currently running
+# Fix 1: Check the 'base_url' config value is correct
+# Fix 2: Confirm the upstream service is running
+flight-action
+> flight-action: Failed to open TCP connection to localhost:6304 (Connection refused - connect(2) for "localhost" port 6304
+
+# Authroization errors indicate there is an issue with the 'jwt_token` parameter
+# Fix: Regenerate the token and try again
+flight-action
+> flight-action: You are not authorized to perform this action
+
+# NOTE: Developers Only
+# The --trace flag does not work for these types of errors as ARGV is not parsed until a command is executed
+```
 
 # Contributing
 

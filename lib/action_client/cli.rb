@@ -32,6 +32,10 @@ require 'commander'
 module ActionClient
   VERSION = '0.1.0'
 
+  class BaseError < StandardError; end
+  class ClientError < BaseError; end
+  class InternalServerError < BaseError; end
+
   class CLI
     extend Commander::Delegates
 
@@ -66,7 +70,6 @@ module ActionClient
                         end
       if new_error_class && e.env.response_headers['content-type'] == 'application/vnd.api+json'
         raise new_error_class, <<~MESSAGE.chomp
-          #{e.message}
           #{e.env.body['errors'].map do |e| e['detail'] end.join("\n\n")}
         MESSAGE
       elsif e.is_a? JsonApiClient::Errors::NotFound
@@ -109,6 +112,9 @@ module ActionClient
         end
       end
     rescue StandardError => e
+      runner = ::Commander::Runner.instance
+      handler = runner.error_handler # NOTE: DO NOT give this method a block! It will set the handler!
+      handler.call(runner, e)
     end
   end
 end
