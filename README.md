@@ -79,9 +79,9 @@ flight-action <cmd> --group gpus
 # Save the outputs in a directory for a node
 flight-action <cmd> slave1 -output /path/to/dir
 # Creates:
-#   /path/to/dir/slave.status
-#   /path/to/dir/slave.stderr
-#   /path/to/dir/slave.stdout
+#   /path/to/dir/slave1.status
+#   /path/to/dir/slave1.stderr
+#   /path/to/dir/slave1.stdout
 
 # Similarly save the output for a group of nodes
 flight-action <cmd> --group gpus -o relative/path/from/working/dir
