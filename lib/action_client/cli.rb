@@ -30,7 +30,7 @@
 require 'commander'
 
 module ActionClient
-  VERSION = '0.1.0'
+  VERSION = '0.1.1'
 
   class BaseError < StandardError; end
   class InvalidInput < BaseError; end
@@ -101,9 +101,9 @@ module ActionClient
              elsif modes.length == 1
                modes.first
              elsif output
-               :status
+               Config::Cache.output_printing_mode
              else
-               :verbose
+               Config::Cache.printing_mode
              end
 
       # Build the associated objects for the request

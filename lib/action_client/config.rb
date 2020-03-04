@@ -31,7 +31,7 @@ require 'yaml'
 require 'hashie'
 
 module ActionClient
-  class Config < Hashie::Dash
+  class Config < Hashie::Trash
     module Cache
       class << self
         def cache
@@ -60,6 +60,9 @@ module ActionClient
     property :base_url
     property :jwt_token, default: ''
     property :debug
+
+    property :printing_mode, default: :verbose, transform_with: ->(v) { v.to_sym }
+    property :output_printing_mode, default: :status, transform_with: ->(v) { v.to_sym }
 
     def debug?
       debug ? true : false
