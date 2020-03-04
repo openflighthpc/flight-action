@@ -63,9 +63,10 @@ module ActionClient
 
     property :printing_mode, default: :verbose, transform_with: ->(v) { v.to_sym }
     property :output_printing_mode, default: :status, transform_with: ->(v) { v.to_sym }
+    property :hide_print_flags
 
-    def debug?
-      debug ? true : false
+    [:debug, :hide_print_flags].each do |m|
+      define_method("#{m}?") { public_send(m) ? true : false }
     end
   end
 end

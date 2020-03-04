@@ -171,10 +171,12 @@ module ActionClient
             c.option '-g', '--group', 'Run over the group of nodes given by NAME'
             c.option '-o', '--output DIRECTORY',
               'Save the results within the given directory'
-            c.option '--status', 'Display the status only'
-            c.option '--stdout', 'Display stdout only'
-            c.option '--stderr', 'Display stderr only'
-            c.option '--verbose', 'Display the status, stdout, and stderr'
+            unless Config::Cache.hide_print_flags?
+              c.option '--status', 'Display the status only'
+              c.option '--stdout', 'Display stdout only'
+              c.option '--stderr', 'Display stderr only'
+              c.option '--verbose', 'Display the status, stdout, and stderr'
+            end
             c.action do |args, opts|
               with_error_handling do
                 hash_opts = opts.__hash__.tap { |h| h.delete(:trace) }

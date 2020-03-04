@@ -44,6 +44,13 @@ printing_mode: verbose
 output_printing_mode: status
 
 # =============================================================================
+# Hide Print Flags [OPTIONAL]
+# Hides the print flags from the CLI. This means the print_mode and
+# output_print_mode options will solely determine how the application prints
+# =============================================================================
+hide_print_flags:
+
+# =============================================================================
 # Debugging Mode [Development Purposes Only]
 # Enable the development tools for debugging purposes
 # =============================================================================
