@@ -33,6 +33,14 @@ module ActionClient
   VERSION = '0.1.0'
 
   class BaseError < StandardError; end
+  class InvalidInput < BaseError; end
+  class UnexpectedError < BaseError
+    MSG = 'An unexpected error has occurred!'
+
+    def initialize(msg = MSG)
+      super
+    end
+  end
   class ClientError < BaseError; end
   class InternalServerError < BaseError; end
 
@@ -86,53 +94,70 @@ module ActionClient
       SYNTAX
     end
 
-    def self.run_remote_action(cmd_id, context_id, group: false, output: nil)
-      with_error_handling do
-        # Build the associated objects for the request
-        command = CommandRecord.new(id: cmd_id)
-        context = (group ? GroupRecord : NodeRecord).new(id: context_id)
+    def self.run_remote_action(cmd_id, context_id, group: false, output: nil, stdout: nil, status: nil, stderr: nil, verbose: nil)
+      modes = { status: status, stdout: stdout, stderr: stderr, verbose: verbose }.select { |_, v| v }.keys
+      mode = if modes.length > 1
+               raise "The following flags can not be used together: #{modes.map { |v| "--#{v}" }.join(' ')}"
+             elsif modes.length == 1
+               modes.first
+             elsif output
+               :status
+             else
+               :verbose
+             end
 
-        # Create the ticket (and run the jobs)
-        ticket = TicketRecord.create(relationships: { command: command, context: context })
+      # Build the associated objects for the request
+      command = CommandRecord.new(id: cmd_id)
+      context = (group ? GroupRecord : NodeRecord).new(id: context_id)
 
-        ticket.jobs.each do |job|
-          if output
-            FileUtils.mkdir_p(output)
+      # Create the ticket (and run the jobs)
+      ticket = TicketRecord.create(relationships: { command: command, context: context })
 
-            # Save Status
-            path = File.expand_path("#{job.node.id}.status", output)
-            File.write(path, job.status)
+      ticket.jobs.each do |job|
+        if output
+          FileUtils.mkdir_p(output)
 
-            # Save Stdout
-            path = File.expand_path("#{job.node.id}.stdout", output)
-            File.write(path, job.stdout)
+          # Save Status
+          path = File.expand_path("#{job.node.id}.status", output)
+          File.write(path, job.status)
 
-            # Save Stderr
-            path = File.expand_path("#{job.node.id}.stderr", output)
-            File.write(path, job.stderr)
+          # Save Stdout
+          path = File.expand_path("#{job.node.id}.stdout", output)
+          File.write(path, job.stdout)
 
-            # Print the exit status
-            puts "#{job.node.id}: #{job.status}"
-          else
-            puts <<~JOB
-
-              NODE: #{job.node.name}
-              STATUS: #{job.status}
-              STDOUT:
-              #{job.stdout}
-
-              STDERR:
-              #{job.stderr}
-            JOB
-          end
+          # Save Stderr
+          path = File.expand_path("#{job.node.id}.stderr", output)
+          File.write(path, job.stderr)
         end
 
-        # Assume missing jobs is because the context is missing
-        # Technically the ticket was created successfully regardless and therefore the API didn't error
-        # It is possible the command is missing, but this would require the CLI to be stale
-        if ticket.jobs.empty?
-          raise ClientError, "Could not find '#{context_id}'"
+        case mode
+        when :status
+          puts "#{job.node.id}: #{job.status}"
+        when :stdout
+          puts "#{job.node.id}: #{job.stdout}"
+        when :stderr
+          puts "#{job.node.id}: #{job.stderr}"
+        when :verbose
+          puts <<~JOB
+
+            NODE: #{job.node.name}
+            STATUS: #{job.status}
+            STDOUT:
+            #{job.stdout}
+
+            STDERR:
+            #{job.stderr}
+          JOB
+        else
+          raise UnexpectedError
         end
+      end
+
+      # Assume missing jobs is because the context is missing
+      # Technically the ticket was created successfully regardless and therefore the API didn't error
+      # It is possible the command is missing, but this would require the CLI to be stale
+      if ticket.jobs.empty?
+        raise ClientError, "Could not find '#{context_id}'"
       end
     end
 
@@ -145,10 +170,16 @@ module ActionClient
             c.description = cmd.description
             c.option '-g', '--group', 'Run over the group of nodes given by NAME'
             c.option '-o', '--output DIRECTORY',
-                     'Save the results within the given directory'
+              'Save the results within the given directory'
+            c.option '--status', 'Display the status only'
+            c.option '--stdout', 'Display stdout only'
+            c.option '--stderr', 'Display stderr only'
+            c.option '--verbose', 'Display the status, stdout, and stderr'
             c.action do |args, opts|
-              hash_opts = opts.__hash__.tap { |h| h.delete(:trace) }
-              run_remote_action(cmd.name, args.first, **hash_opts)
+              with_error_handling do
+                hash_opts = opts.__hash__.tap { |h| h.delete(:trace) }
+                run_remote_action(cmd.name, args.first, **hash_opts)
+              end
             end
           end
         end
