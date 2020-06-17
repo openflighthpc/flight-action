@@ -85,11 +85,12 @@ module ActionClient
     def self.run_remote_action(
       cmd_id,
       context_id,
+      exit_max_status: nil,
       group: nil,
       output: nil,
-      stdout: nil,
+      prefix: nil,
       stderr: nil,
-      prefix: nil
+      stdout: nil
     )
       streams = { stdout: stdout, stderr: stderr }.select { |_, v| v }.keys
 
@@ -107,6 +108,10 @@ module ActionClient
       Formatter
         .new(jobs: ticket.jobs, streams: streams, output_dir: output, prefix: prefix)
         .run
+
+      if exit_max_status
+        exit ticket.jobs.map(&:status).max
+      end
     end
 
     begin
@@ -120,6 +125,7 @@ module ActionClient
             c.option '-o', '--output DIRECTORY',
               'Save the results within the given directory'
             c.option '--[no-]prefix', 'Disable hostname: prefix on lines of output.'
+            c.option '-S', 'Return the largest of the command return values.'
             unless Config::Cache.hide_print_flags?
               c.option '--[no-]stdout', 'Display stdout'
               c.option '--[no-]stderr', 'Display stderr'
@@ -128,11 +134,13 @@ module ActionClient
               with_error_handling do
                 opts.default(
                   group: false,
+                  S: false,
                   stdout: Config::Cache.print_stdout,
                   stderr: Config::Cache.print_stderr,
                 )
                 opts.default(prefix: opts.group)
                 hash_opts = opts.__hash__.tap { |h| h.delete(:trace) }
+                hash_opts[:exit_max_status] = hash_opts.delete(:S)
                 run_remote_action(cmd.name, args.first, **hash_opts)
               end
             end
