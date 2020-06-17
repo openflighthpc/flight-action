@@ -29,55 +29,30 @@
 
 require 'json_api_client'
 
-module ActionClient
-  class BaseRecord < JsonApiClient::Resource
-    def self.inherited(klass)
-      resolve_custom_type klass.resource_name, klass
+module JsonApiClient
+  class Resource
+
+    protected
+
+    def error_message_for(error)
+      error.error_msg(prefer_details: true)
     end
+  end
 
-    def self.resource_name
-      @resource_name ||= self.to_s.demodulize.chomp('Record').downcase.pluralize
+  class ErrorCollector < Array
+    class Error
+      def error_msg(prefer_details: false)
+        msg = if prefer_details
+                detail || title || "invalid"
+              else
+                title || detail || "invalid"
+              end
+        if source_parameter
+          "#{source_parameter} #{msg}"
+        else
+          msg
+        end
+      end
     end
-
-    self.site = Config::Cache.base_url
-  end
-
-  BaseRecord.connection_options[:status_handlers] = {
-    404 => ->(env) { raise ActionClient::NotFound, env },
-  }
-
-  BaseRecord.connection do |connection|
-    connection.faraday.authorization :Bearer, Config::Cache.jwt_token
-  end
-
-  class NodeRecord < BaseRecord
-    property :name
-  end
-
-  class GroupRecord < BaseRecord
-    property :name
-  end
-
-  class CommandRecord < BaseRecord
-    property :name
-    property :summary
-    property :description
-  end
-
-  class JobRecord < BaseRecord
-    property :stdout
-    property :stderr
-    property :status
-
-    belongs_to :node, shallow_path: true
-    belongs_to :ticket, shallow_path: true
-  end
-
-  class TicketRecord < BaseRecord
-    belongs_to :command, shallow_path: true
-    belongs_to :context, shallow_path: true
-    has_many :nodes
-    has_many :jobs
   end
 end
-
