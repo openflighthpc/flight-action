@@ -46,7 +46,7 @@ module ActionClient
     def print_tagged_streams(job)
       Array.wrap(@streams).each do |stream|
         lines = tagged_lines(job, stream)
-        puts lines.join unless lines.empty?
+        io_for_stream(stream).puts lines.join unless lines.empty?
       end
     end
 
@@ -73,6 +73,12 @@ module ActionClient
       # Save Stderr
       path = File.expand_path("#{job.node.id}.stderr", @output_dir)
       File.write(path, job.stderr)
+    end
+
+    def io_for_stream(stream)
+      Kernel.const_get(stream.to_s.upcase)
+    rescue NameError
+      STDOUT
     end
   end
 end
