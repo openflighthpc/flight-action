@@ -29,7 +29,7 @@
 
 module ActionClient
   class Formatter
-    def initialize(jobs, mode, output_dir)
+    def initialize(jobs:, mode:, output_dir:)
       @jobs = jobs
       @mode = mode
       @output_dir = output_dir
@@ -37,44 +37,51 @@ module ActionClient
 
     def run
       @jobs.each do |job|
-        if @output_dir
-          FileUtils.mkdir_p(@output_dir)
-
-          # Save Status
-          path = File.expand_path("#{job.node.id}.status", @output_dir)
-          File.write(path, job.status)
-
-          # Save Stdout
-          path = File.expand_path("#{job.node.id}.stdout", @output_dir)
-          File.write(path, job.stdout)
-
-          # Save Stderr
-          path = File.expand_path("#{job.node.id}.stderr", @output_dir)
-          File.write(path, job.stderr)
-        end
+        persist_output(job) if @output_dir
 
         case @mode
         when :status
           puts "#{job.node.id}: #{job.status}"
         when :stdout
-          puts "#{job.node.id}: #{job.stdout}"
+          puts_tagged_streams(job, :stdout)
         when :stderr
-          puts "#{job.node.id}: #{job.stderr}"
+          puts_tagged_streams(job, :stderr)
         when :verbose
-          puts <<~JOB
-
-            NODE: #{job.node.name}
-            STATUS: #{job.status}
-            STDOUT:
-          #{job.stdout}
-
-            STDERR:
-          #{job.stderr}
-          JOB
+          puts_tagged_streams(job)
         else
           raise UnexpectedError
         end
       end
+    end
+
+    def puts_tagged_streams(job, streams=%w(stdout stderr))
+      Array.wrap(streams).each do |stream|
+        output = tagged_lines(job, stream)
+        puts output.join unless output.empty?
+      end
+    end
+
+    def tagged_lines(job, stream)
+      tag = job.node.id
+      job.send(stream).lines.map do |line|
+        "#{tag}: #{line}"
+      end
+    end
+
+    def persist_output(job)
+      FileUtils.mkdir_p(@output_dir)
+
+      # Save Status
+      path = File.expand_path("#{job.node.id}.status", @output_dir)
+      File.write(path, job.status)
+
+      # Save Stdout
+      path = File.expand_path("#{job.node.id}.stdout", @output_dir)
+      File.write(path, job.stdout)
+
+      # Save Stderr
+      path = File.expand_path("#{job.node.id}.stderr", @output_dir)
+      File.write(path, job.stderr)
     end
   end
 end

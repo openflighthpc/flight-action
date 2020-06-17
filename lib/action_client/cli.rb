@@ -105,7 +105,9 @@ module ActionClient
         raise UnexpectedError, ticket.errors.full_messages
       end
 
-      Formatter.new(ticket.jobs, mode, output).run
+      Formatter
+        .new(jobs: ticket.jobs, mode: mode, output_dir: output)
+        .run
     end
 
     begin
