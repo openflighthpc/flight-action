@@ -48,6 +48,7 @@ task :require do
 
   require 'action_client/patches'
   require 'action_client/errors'
+  require 'action_client/formatter'
   require 'action_client/records'
   require 'action_client/cli'
 end

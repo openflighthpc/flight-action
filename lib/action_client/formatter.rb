@@ -27,47 +27,58 @@
 # https://github.com/openflighthpc/action-client-ruby
 #===============================================================================
 
-require 'yaml'
-require 'hashie'
-
 module ActionClient
-  class Config < Hashie::Trash
-    module Cache
-      class << self
-        def cache
-          @cache ||=  begin
-            if File.exists? path
-              Config.new(YAML.load(File.read(path), symbolize_names: true))
-            else
-              $stderr.puts <<~ERROR.chomp
-                ERROR: The configuration file does not exist: #{path}
-              ERROR
-              exit 1
-            end
-          end
-        end
+  class Formatter
+    def initialize(jobs:, streams: %w(stdout stderr), output_dir:, prefix:)
+      @jobs = jobs
+      @streams = streams
+      @output_dir = output_dir
+      @prefix = prefix
+    end
 
-        def path
-          File.expand_path('../../etc/config.yaml', __dir__)
-        end
-
-        delegate_missing_to :cache
+    def run
+      @jobs.each do |job|
+        persist_output(job) if @output_dir
+        print_tagged_streams(job)
       end
     end
 
-    include Hashie::Extensions::IgnoreUndeclared
+    def print_tagged_streams(job)
+      Array.wrap(@streams).each do |stream|
+        lines = tagged_lines(job, stream)
+        io_for_stream(stream).puts lines.join unless lines.empty?
+      end
+    end
 
-    property :base_url
-    property :jwt_token, default: ''
-    property :debug
+    def tagged_lines(job, stream)
+      return job.send(stream).lines unless @prefix
 
-    property :hide_print_flags
-    property :print_stdout, default: true
-    property :print_stderr, default: true
+      tag = job.node.id
+      job.send(stream).lines.map do |line|
+        "#{tag}: #{line}"
+      end
+    end
 
-    [:debug, :hide_print_flags].each do |m|
-      define_method("#{m}?") { public_send(m) ? true : false }
+    def persist_output(job)
+      FileUtils.mkdir_p(@output_dir)
+
+      # Save Status
+      path = File.expand_path("#{job.node.id}.status", @output_dir)
+      File.write(path, job.status)
+
+      # Save Stdout
+      path = File.expand_path("#{job.node.id}.stdout", @output_dir)
+      File.write(path, job.stdout)
+
+      # Save Stderr
+      path = File.expand_path("#{job.node.id}.stderr", @output_dir)
+      File.write(path, job.stderr)
+    end
+
+    def io_for_stream(stream)
+      Kernel.const_get(stream.to_s.upcase)
+    rescue NameError
+      STDOUT
     end
   end
 end
-

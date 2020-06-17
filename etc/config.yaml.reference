@@ -21,32 +21,20 @@ base_url:
 jwt_token:
 
 # =============================================================================
-# Printing Mode [OPTIONAL]
-# Specify one of the following modes: stdout, stderr, status, verbose
+# Default streams to print
+# Specify which streams to print by default.
 #
-# The stdout, stderr, and status modes will only print their respective
-# attributes only (E.g. stdout mode will only print standard out).
-#
-# Verbose will print all three attributes: stdout, stderr, and status. This
-# field will default to verbose unless otherwise set.
-#
-# This field can be overridden on the command line using the
-# flags of the same names: --stdout, --stderr, --status, --verbose
+# These fields can be overridden on the command line using the flags:
+#   --[no-]stdout, --[no-]stderr
 # =============================================================================
-printing_mode: verbose
-
-# =============================================================================
-# Printing Mode when Called with --output [OPTIONAL]
-# Similar to the 'print_mode' config option, but acts as the default when the
-# application is called with --output. The field defaults to verbose unless
-# otherwise set.
-# =============================================================================
-output_printing_mode: status
+print_stdout: true
+print_stderr: true
 
 # =============================================================================
 # Hide Print Flags [OPTIONAL]
-# Hides the print flags from the CLI. This means the print_mode and
-# output_print_mode options will solely determine how the application prints
+# Hides the print flags from the CLI. This means the print_stdout and
+# print_stderr configuration options will solely determine how the application
+# prints
 # =============================================================================
 hide_print_flags:
 

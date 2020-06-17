@@ -82,17 +82,17 @@ module ActionClient
       SYNTAX
     end
 
-    def self.run_remote_action(cmd_id, context_id, group: false, output: nil, stdout: nil, status: nil, stderr: nil, verbose: nil)
-      modes = { status: status, stdout: stdout, stderr: stderr, verbose: verbose }.select { |_, v| v }.keys
-      mode = if modes.length > 1
-               raise "The following flags can not be used together: #{modes.map { |v| "--#{v}" }.join(' ')}"
-             elsif modes.length == 1
-               modes.first
-             elsif output
-               Config::Cache.output_printing_mode
-             else
-               Config::Cache.printing_mode
-             end
+    def self.run_remote_action(
+      cmd_id,
+      context_id,
+      exit_max_status: nil,
+      group: nil,
+      output: nil,
+      prefix: nil,
+      stderr: nil,
+      stdout: nil
+    )
+      streams = { stdout: stdout, stderr: stderr }.select { |_, v| v }.keys
 
       # Build the associated objects for the request
       command = CommandRecord.new(id: cmd_id)
@@ -105,44 +105,12 @@ module ActionClient
         raise UnexpectedError, ticket.errors.full_messages
       end
 
-      ticket.jobs.each do |job|
-        if output
-          FileUtils.mkdir_p(output)
+      Formatter
+        .new(jobs: ticket.jobs, streams: streams, output_dir: output, prefix: prefix)
+        .run
 
-          # Save Status
-          path = File.expand_path("#{job.node.id}.status", output)
-          File.write(path, job.status)
-
-          # Save Stdout
-          path = File.expand_path("#{job.node.id}.stdout", output)
-          File.write(path, job.stdout)
-
-          # Save Stderr
-          path = File.expand_path("#{job.node.id}.stderr", output)
-          File.write(path, job.stderr)
-        end
-
-        case mode
-        when :status
-          puts "#{job.node.id}: #{job.status}"
-        when :stdout
-          puts "#{job.node.id}: #{job.stdout}"
-        when :stderr
-          puts "#{job.node.id}: #{job.stderr}"
-        when :verbose
-          puts <<~JOB
-
-            NODE: #{job.node.name}
-            STATUS: #{job.status}
-            STDOUT:
-            #{job.stdout}
-
-            STDERR:
-            #{job.stderr}
-          JOB
-        else
-          raise UnexpectedError
-        end
+      if exit_max_status
+        exit ticket.jobs.map(&:status).max
       end
     end
 
@@ -156,15 +124,23 @@ module ActionClient
             c.option '-g', '--group', 'Run over the group of nodes given by NAME'
             c.option '-o', '--output DIRECTORY',
               'Save the results within the given directory'
+            c.option '--[no-]prefix', 'Disable hostname: prefix on lines of output.'
+            c.option '-S', 'Return the largest of the command return values.'
             unless Config::Cache.hide_print_flags?
-              c.option '--status', 'Display the status only'
-              c.option '--stdout', 'Display stdout only'
-              c.option '--stderr', 'Display stderr only'
-              c.option '--verbose', 'Display the status, stdout, and stderr'
+              c.option '--[no-]stdout', 'Display stdout'
+              c.option '--[no-]stderr', 'Display stderr'
             end
             c.action do |args, opts|
               with_error_handling do
+                opts.default(
+                  group: false,
+                  S: false,
+                  stdout: Config::Cache.print_stdout,
+                  stderr: Config::Cache.print_stderr,
+                )
+                opts.default(prefix: opts.group)
                 hash_opts = opts.__hash__.tap { |h| h.delete(:trace) }
+                hash_opts[:exit_max_status] = hash_opts.delete(:S)
                 run_remote_action(cmd.name, args.first, **hash_opts)
               end
             end
