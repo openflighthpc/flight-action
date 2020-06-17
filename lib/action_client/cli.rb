@@ -139,7 +139,8 @@ module ActionClient
             end
             c.action do |args, opts|
               with_error_handling do
-                opts.default(prefix: true, group: false)
+                opts.default(group: false)
+                opts.default(prefix: opts.group)
                 hash_opts = opts.__hash__.tap { |h| h.delete(:trace) }
                 run_remote_action(cmd.name, args.first, **hash_opts)
               end
