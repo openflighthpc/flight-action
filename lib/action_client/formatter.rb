@@ -29,10 +29,11 @@
 
 module ActionClient
   class Formatter
-    def initialize(jobs:, mode:, output_dir:)
+    def initialize(jobs:, mode:, output_dir:, prefix:)
       @jobs = jobs
       @mode = mode
       @output_dir = output_dir
+      @prefix = prefix
     end
 
     def run
@@ -62,6 +63,8 @@ module ActionClient
     end
 
     def tagged_lines(job, stream)
+      return job.send(stream).lines unless @prefix
+
       tag = job.node.id
       job.send(stream).lines.map do |line|
         "#{tag}: #{line}"

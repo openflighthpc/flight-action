@@ -82,7 +82,17 @@ module ActionClient
       SYNTAX
     end
 
-    def self.run_remote_action(cmd_id, context_id, group: false, output: nil, stdout: nil, status: nil, stderr: nil, verbose: nil)
+    def self.run_remote_action(
+      cmd_id,
+      context_id,
+      group: nil,
+      output: nil,
+      stdout: nil,
+      status: nil,
+      stderr: nil,
+      verbose: nil,
+      prefix: nil
+    )
       modes = { status: status, stdout: stdout, stderr: stderr, verbose: verbose }.select { |_, v| v }.keys
       mode = if modes.length > 1
                raise "The following flags can not be used together: #{modes.map { |v| "--#{v}" }.join(' ')}"
@@ -106,7 +116,7 @@ module ActionClient
       end
 
       Formatter
-        .new(jobs: ticket.jobs, mode: mode, output_dir: output)
+        .new(jobs: ticket.jobs, mode: mode, output_dir: output, prefix: prefix)
         .run
     end
 
@@ -120,6 +130,7 @@ module ActionClient
             c.option '-g', '--group', 'Run over the group of nodes given by NAME'
             c.option '-o', '--output DIRECTORY',
               'Save the results within the given directory'
+            c.option '--[no-]prefix', 'Disable hostname: prefix on lines of output.'
             unless Config::Cache.hide_print_flags?
               c.option '--status', 'Display the status only'
               c.option '--stdout', 'Display stdout only'
@@ -128,6 +139,7 @@ module ActionClient
             end
             c.action do |args, opts|
               with_error_handling do
+                opts.default(prefix: true, group: false)
                 hash_opts = opts.__hash__.tap { |h| h.delete(:trace) }
                 run_remote_action(cmd.name, args.first, **hash_opts)
               end
