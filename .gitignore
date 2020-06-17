@@ -1,1 +1,9 @@
-etc/config.yaml
+/bin
+/etc/config.yaml
+
+*.orig
+
+## Environment normalization:
+/.bundle/
+/vendor/bundle
+/lib/bundler/man/

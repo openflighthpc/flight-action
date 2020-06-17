@@ -40,7 +40,15 @@ module ActionClient
     end
 
     self.site = Config::Cache.base_url
-    self.connection.faraday.authorization :Bearer, Config::Cache.jwt_token
+  end
+
+  BaseRecord.connection_options[:status_handlers] = {
+    404 => ->(env) { raise ActionClient::NotFound, env },
+  }
+
+  BaseRecord.connection do |connection|
+    connection.use Faraday::Response::Logger if ENV.fetch('DEBUG', false)
+    connection.faraday.authorization :Bearer, Config::Cache.jwt_token
   end
 
   class NodeRecord < BaseRecord
@@ -70,6 +78,7 @@ module ActionClient
     belongs_to :command, shallow_path: true
     belongs_to :context, shallow_path: true
     has_many :nodes
+    has_many :jobs
   end
 end
 

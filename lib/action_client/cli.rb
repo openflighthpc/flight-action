@@ -32,18 +32,6 @@ require 'commander'
 module ActionClient
   VERSION = '0.1.1'
 
-  class BaseError < StandardError; end
-  class InvalidInput < BaseError; end
-  class UnexpectedError < BaseError
-    MSG = 'An unexpected error has occurred!'
-
-    def initialize(msg = MSG)
-      super
-    end
-  end
-  class ClientError < BaseError; end
-  class InternalServerError < BaseError; end
-
   class CLI
     extend Commander::Delegates
 
@@ -67,7 +55,7 @@ module ActionClient
       new_error_class = case e
                         when JsonApiClient::Errors::ConnectionError
                           nil
-                        when JsonApiClient::Errors::NotFound
+                        when JsonApiClient::Errors::NotFound, ActionClient::NotFound
                           nil
                         when JsonApiClient::Errors::ClientError
                           ClientError
@@ -113,6 +101,10 @@ module ActionClient
       # Create the ticket (and run the jobs)
       ticket = TicketRecord.create(relationships: { command: command, context: context })
 
+      unless ticket.errors.empty?
+        raise UnexpectedError, ticket.errors.full_messages
+      end
+
       ticket.jobs.each do |job|
         if output
           FileUtils.mkdir_p(output)
@@ -151,13 +143,6 @@ module ActionClient
         else
           raise UnexpectedError
         end
-      end
-
-      # Assume missing jobs is because the context is missing
-      # Technically the ticket was created successfully regardless and therefore the API didn't error
-      # It is possible the command is missing, but this would require the CLI to be stale
-      if ticket.jobs.empty?
-        raise ClientError, "Could not find '#{context_id}'"
       end
     end
 

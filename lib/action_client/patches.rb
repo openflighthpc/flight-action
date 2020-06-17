@@ -27,34 +27,32 @@
 # https://github.com/openflighthpc/action-client-ruby
 #===============================================================================
 
-task :require do
-  $: << File.expand_path('lib', __dir__)
-  ENV['BUNDLE_GEMFILE'] ||= File.join(__dir__, 'Gemfile')
+require 'json_api_client'
 
-  require 'rubygems'
-  require 'bundler/setup'
+module JsonApiClient
+  class Resource
 
-  require 'active_support/core_ext/string'
-  require 'active_support/core_ext/module'
-  require 'active_support/core_ext/module/delegation'
+    protected
 
-
-  require 'action_client/config'
-
-  if ActionClient::Config::Cache.debug?
-    require 'pry'
-    require 'pry-byebug'
+    def error_message_for(error)
+      error.error_msg(prefer_details: true)
+    end
   end
 
-  require 'action_client/patches'
-  require 'action_client/errors'
-  require 'action_client/records'
-  require 'action_client/cli'
+  class ErrorCollector < Array
+    class Error
+      def error_msg(prefer_details: false)
+        msg = if prefer_details
+                detail || title || "invalid"
+              else
+                title || detail || "invalid"
+              end
+        if source_parameter
+          "#{source_parameter} #{msg}"
+        else
+          msg
+        end
+      end
+    end
+  end
 end
-
-task console: :require do
-  require 'pry'
-  require 'pry-byebug'
-  binding.pry
-end
-
