@@ -47,6 +47,7 @@ module ActionClient
   }
 
   BaseRecord.connection do |connection|
+    connection.use Faraday::Response::Logger if ENV.fetch('DEBUG', false)
     connection.faraday.authorization :Bearer, Config::Cache.jwt_token
   end
 
