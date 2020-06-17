@@ -29,9 +29,9 @@
 
 module ActionClient
   class Formatter
-    def initialize(jobs:, mode:, output_dir:, prefix:)
+    def initialize(jobs:, streams: %w(stdout stderr), output_dir:, prefix:)
       @jobs = jobs
-      @mode = mode
+      @streams = streams
       @output_dir = output_dir
       @prefix = prefix
     end
@@ -39,26 +39,14 @@ module ActionClient
     def run
       @jobs.each do |job|
         persist_output(job) if @output_dir
-
-        case @mode
-        when :status
-          puts "#{job.node.id}: #{job.status}"
-        when :stdout
-          puts_tagged_streams(job, :stdout)
-        when :stderr
-          puts_tagged_streams(job, :stderr)
-        when :verbose
-          puts_tagged_streams(job)
-        else
-          raise UnexpectedError
-        end
+        print_tagged_streams(job)
       end
     end
 
-    def puts_tagged_streams(job, streams=%w(stdout stderr))
-      Array.wrap(streams).each do |stream|
-        output = tagged_lines(job, stream)
-        puts output.join unless output.empty?
+    def print_tagged_streams(job)
+      Array.wrap(@streams).each do |stream|
+        lines = tagged_lines(job, stream)
+        puts lines.join unless lines.empty?
       end
     end
 

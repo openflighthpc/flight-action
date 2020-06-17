@@ -88,21 +88,10 @@ module ActionClient
       group: nil,
       output: nil,
       stdout: nil,
-      status: nil,
       stderr: nil,
-      verbose: nil,
       prefix: nil
     )
-      modes = { status: status, stdout: stdout, stderr: stderr, verbose: verbose }.select { |_, v| v }.keys
-      mode = if modes.length > 1
-               raise "The following flags can not be used together: #{modes.map { |v| "--#{v}" }.join(' ')}"
-             elsif modes.length == 1
-               modes.first
-             elsif output
-               Config::Cache.output_printing_mode
-             else
-               Config::Cache.printing_mode
-             end
+      streams = { stdout: stdout, stderr: stderr }.select { |_, v| v }.keys
 
       # Build the associated objects for the request
       command = CommandRecord.new(id: cmd_id)
@@ -116,7 +105,7 @@ module ActionClient
       end
 
       Formatter
-        .new(jobs: ticket.jobs, mode: mode, output_dir: output, prefix: prefix)
+        .new(jobs: ticket.jobs, streams: streams, output_dir: output, prefix: prefix)
         .run
     end
 
@@ -132,14 +121,16 @@ module ActionClient
               'Save the results within the given directory'
             c.option '--[no-]prefix', 'Disable hostname: prefix on lines of output.'
             unless Config::Cache.hide_print_flags?
-              c.option '--status', 'Display the status only'
-              c.option '--stdout', 'Display stdout only'
-              c.option '--stderr', 'Display stderr only'
-              c.option '--verbose', 'Display the status, stdout, and stderr'
+              c.option '--[no-]stdout', 'Display stdout'
+              c.option '--[no-]stderr', 'Display stderr'
             end
             c.action do |args, opts|
               with_error_handling do
-                opts.default(group: false)
+                opts.default(
+                  group: false,
+                  stdout: Config::Cache.print_stdout,
+                  stderr: Config::Cache.print_stderr,
+                )
                 opts.default(prefix: opts.group)
                 hash_opts = opts.__hash__.tap { |h| h.delete(:trace) }
                 run_remote_action(cmd.name, args.first, **hash_opts)

@@ -61,9 +61,9 @@ module ActionClient
     property :jwt_token, default: ''
     property :debug
 
-    property :printing_mode, default: :verbose, transform_with: ->(v) { v.to_sym }
-    property :output_printing_mode, default: :status, transform_with: ->(v) { v.to_sym }
     property :hide_print_flags
+    property :print_stdout, default: true
+    property :print_stderr, default: true
 
     [:debug, :hide_print_flags].each do |m|
       define_method("#{m}?") { public_send(m) ? true : false }
