@@ -27,35 +27,54 @@
 # https://github.com/openflighthpc/action-client-ruby
 #===============================================================================
 
-task :require do
-  $: << File.expand_path('lib', __dir__)
-  ENV['BUNDLE_GEMFILE'] ||= File.join(__dir__, 'Gemfile')
+module ActionClient
+  class Formatter
+    def initialize(jobs, mode, output_dir)
+      @jobs = jobs
+      @mode = mode
+      @output_dir = output_dir
+    end
 
-  require 'rubygems'
-  require 'bundler/setup'
+    def run
+      @jobs.each do |job|
+        if @output_dir
+          FileUtils.mkdir_p(@output_dir)
 
-  require 'active_support/core_ext/string'
-  require 'active_support/core_ext/module'
-  require 'active_support/core_ext/module/delegation'
+          # Save Status
+          path = File.expand_path("#{job.node.id}.status", @output_dir)
+          File.write(path, job.status)
 
+          # Save Stdout
+          path = File.expand_path("#{job.node.id}.stdout", @output_dir)
+          File.write(path, job.stdout)
 
-  require 'action_client/config'
+          # Save Stderr
+          path = File.expand_path("#{job.node.id}.stderr", @output_dir)
+          File.write(path, job.stderr)
+        end
 
-  if ActionClient::Config::Cache.debug?
-    require 'pry'
-    require 'pry-byebug'
+        case @mode
+        when :status
+          puts "#{job.node.id}: #{job.status}"
+        when :stdout
+          puts "#{job.node.id}: #{job.stdout}"
+        when :stderr
+          puts "#{job.node.id}: #{job.stderr}"
+        when :verbose
+          puts <<~JOB
+
+            NODE: #{job.node.name}
+            STATUS: #{job.status}
+            STDOUT:
+          #{job.stdout}
+
+            STDERR:
+          #{job.stderr}
+          JOB
+        else
+          raise UnexpectedError
+        end
+      end
+    end
   end
-
-  require 'action_client/patches'
-  require 'action_client/errors'
-  require 'action_client/formatter'
-  require 'action_client/records'
-  require 'action_client/cli'
 end
-
-task console: :require do
-  require 'pry'
-  require 'pry-byebug'
-  binding.pry
-end
-

@@ -105,45 +105,7 @@ module ActionClient
         raise UnexpectedError, ticket.errors.full_messages
       end
 
-      ticket.jobs.each do |job|
-        if output
-          FileUtils.mkdir_p(output)
-
-          # Save Status
-          path = File.expand_path("#{job.node.id}.status", output)
-          File.write(path, job.status)
-
-          # Save Stdout
-          path = File.expand_path("#{job.node.id}.stdout", output)
-          File.write(path, job.stdout)
-
-          # Save Stderr
-          path = File.expand_path("#{job.node.id}.stderr", output)
-          File.write(path, job.stderr)
-        end
-
-        case mode
-        when :status
-          puts "#{job.node.id}: #{job.status}"
-        when :stdout
-          puts "#{job.node.id}: #{job.stdout}"
-        when :stderr
-          puts "#{job.node.id}: #{job.stderr}"
-        when :verbose
-          puts <<~JOB
-
-            NODE: #{job.node.name}
-            STATUS: #{job.status}
-            STDOUT:
-            #{job.stdout}
-
-            STDERR:
-            #{job.stderr}
-          JOB
-        else
-          raise UnexpectedError
-        end
-      end
+      Formatter.new(ticket.jobs, mode, output).run
     end
 
     begin
