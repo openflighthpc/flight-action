@@ -27,47 +27,32 @@
 # https://github.com/openflighthpc/action-client-ruby
 #===============================================================================
 
-require 'yaml'
-require 'hashie'
+require 'json_api_client'
 
-module ActionClient
-  class Config < Hashie::Trash
-    module Cache
-      class << self
-        def cache
-          @cache ||=  begin
-            if File.exists? path
-              Config.new(YAML.load(File.read(path), symbolize_names: true))
-            else
-              $stderr.puts <<~ERROR.chomp
-                ERROR: The configuration file does not exist: #{path}
-              ERROR
-              exit 1
-            end
-          end
-        end
+module JsonApiClient
+  class Resource
 
-        def path
-          File.expand_path('../../etc/config.yaml', __dir__)
-        end
+    protected
 
-        delegate_missing_to :cache
-      end
+    def error_message_for(error)
+      error.error_msg(prefer_details: true)
     end
+  end
 
-    include Hashie::Extensions::IgnoreUndeclared
-
-    property :base_url
-    property :jwt_token, default: ''
-    property :debug
-
-    property :hide_print_flags
-    property :print_stdout, default: true
-    property :print_stderr, default: true
-
-    [:debug, :hide_print_flags].each do |m|
-      define_method("#{m}?") { public_send(m) ? true : false }
+  class ErrorCollector < Array
+    class Error
+      def error_msg(prefer_details: false)
+        msg = if prefer_details
+                detail || title || "invalid"
+              else
+                title || detail || "invalid"
+              end
+        if source_parameter
+          "#{source_parameter} #{msg}"
+        else
+          msg
+        end
+      end
     end
   end
 end
-

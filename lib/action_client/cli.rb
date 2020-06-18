@@ -30,11 +30,7 @@
 require 'commander'
 
 module ActionClient
-  VERSION = '0.1.0'
-
-  class BaseError < StandardError; end
-  class ClientError < BaseError; end
-  class InternalServerError < BaseError; end
+  VERSION = '0.1.1'
 
   class CLI
     extend Commander::Delegates
@@ -59,7 +55,7 @@ module ActionClient
       new_error_class = case e
                         when JsonApiClient::Errors::ConnectionError
                           nil
-                        when JsonApiClient::Errors::NotFound
+                        when JsonApiClient::Errors::NotFound, ActionClient::NotFound
                           nil
                         when JsonApiClient::Errors::ClientError
                           ClientError
@@ -86,53 +82,35 @@ module ActionClient
       SYNTAX
     end
 
-    def self.run_remote_action(cmd_id, context_id, group: false, output: nil)
-      with_error_handling do
-        # Build the associated objects for the request
-        command = CommandRecord.new(id: cmd_id)
-        context = (group ? GroupRecord : NodeRecord).new(id: context_id)
+    def self.run_remote_action(
+      cmd_id,
+      context_id,
+      exit_max_status: nil,
+      group: nil,
+      output: nil,
+      prefix: nil,
+      stderr: nil,
+      stdout: nil
+    )
+      streams = { stdout: stdout, stderr: stderr }.select { |_, v| v }.keys
 
-        # Create the ticket (and run the jobs)
-        ticket = TicketRecord.create(relationships: { command: command, context: context })
+      # Build the associated objects for the request
+      command = CommandRecord.new(id: cmd_id)
+      context = (group ? GroupRecord : NodeRecord).new(id: context_id)
 
-        ticket.jobs.each do |job|
-          if output
-            FileUtils.mkdir_p(output)
+      # Create the ticket (and run the jobs)
+      ticket = TicketRecord.create(relationships: { command: command, context: context })
 
-            # Save Status
-            path = File.expand_path("#{job.node.id}.status", output)
-            File.write(path, job.status)
+      unless ticket.errors.empty?
+        raise UnexpectedError, ticket.errors.full_messages
+      end
 
-            # Save Stdout
-            path = File.expand_path("#{job.node.id}.stdout", output)
-            File.write(path, job.stdout)
+      Formatter
+        .new(jobs: ticket.jobs, streams: streams, output_dir: output, prefix: prefix)
+        .run
 
-            # Save Stderr
-            path = File.expand_path("#{job.node.id}.stderr", output)
-            File.write(path, job.stderr)
-
-            # Print the exit status
-            puts "#{job.node.id}: #{job.status}"
-          else
-            puts <<~JOB
-
-              NODE: #{job.node.name}
-              STATUS: #{job.status}
-              STDOUT:
-              #{job.stdout}
-
-              STDERR:
-              #{job.stderr}
-            JOB
-          end
-        end
-
-        # Assume missing jobs is because the context is missing
-        # Technically the ticket was created successfully regardless and therefore the API didn't error
-        # It is possible the command is missing, but this would require the CLI to be stale
-        if ticket.jobs.empty?
-          raise ClientError, "Could not find '#{context_id}'"
-        end
+      if exit_max_status
+        exit ticket.jobs.map(&:status).max
       end
     end
 
@@ -145,10 +123,26 @@ module ActionClient
             c.description = cmd.description
             c.option '-g', '--group', 'Run over the group of nodes given by NAME'
             c.option '-o', '--output DIRECTORY',
-                     'Save the results within the given directory'
+              'Save the results within the given directory'
+            c.option '--[no-]prefix', 'Disable hostname: prefix on lines of output.'
+            c.option '-S', 'Return the largest of the command return values.'
+            unless Config::Cache.hide_print_flags?
+              c.option '--[no-]stdout', 'Display stdout'
+              c.option '--[no-]stderr', 'Display stderr'
+            end
             c.action do |args, opts|
-              hash_opts = opts.__hash__.tap { |h| h.delete(:trace) }
-              run_remote_action(cmd.name, args.first, **hash_opts)
+              with_error_handling do
+                opts.default(
+                  group: false,
+                  S: false,
+                  stdout: Config::Cache.print_stdout,
+                  stderr: Config::Cache.print_stderr,
+                )
+                opts.default(prefix: opts.group)
+                hash_opts = opts.__hash__.tap { |h| h.delete(:trace) }
+                hash_opts[:exit_max_status] = hash_opts.delete(:S)
+                run_remote_action(cmd.name, args.first, **hash_opts)
+              end
             end
           end
         end
