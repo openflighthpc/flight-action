@@ -58,15 +58,20 @@ module ActionClient
     include Hashie::Extensions::IgnoreUndeclared
 
     property :base_url
-    property :jwt_token, default: ''
-    property :debug
+    property :debug,            default: false
+    property :hide_print_flags, default: false
+    property :jwt_token,        default: ''
+    property :print_stderr,     default: true
+    property :print_stdout,     default: true
+    property :verify_ssl,       default: true
 
-    property :hide_print_flags
-    property :print_stdout, default: true
-    property :print_stderr, default: true
-    property :verify_ssl, default: true
-
-    [:debug, :hide_print_flags, :verify_ssl].each do |m|
+    [
+      :debug,
+      :hide_print_flags,
+      :print_stderr,
+      :print_stdout,
+      :verify_ssl,
+    ].each do |m|
       define_method("#{m}?") { public_send(m) ? true : false }
     end
   end
