@@ -21,6 +21,13 @@ base_url:
 jwt_token:
 
 # =============================================================================
+# Verify SSL [OPTIONAL]
+# Verify the SSL certificate when making requests to base_url.  Only
+# applicable for HTTPs connections.
+# =============================================================================
+verify_ssl: true
+
+# =============================================================================
 # Default streams to print
 # Specify which streams to print by default.
 #

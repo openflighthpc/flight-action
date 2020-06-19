@@ -64,8 +64,9 @@ module ActionClient
     property :hide_print_flags
     property :print_stdout, default: true
     property :print_stderr, default: true
+    property :verify_ssl, default: true
 
-    [:debug, :hide_print_flags].each do |m|
+    [:debug, :hide_print_flags, :verify_ssl].each do |m|
       define_method("#{m}?") { public_send(m) ? true : false }
     end
   end
