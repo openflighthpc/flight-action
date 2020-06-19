@@ -39,6 +39,17 @@ module ActionClient
       @resource_name ||= self.to_s.demodulize.chomp('Record').downcase.pluralize
     end
 
+    # Overridden to add `compact` call to paths prior to joining them.
+    # Without this multiple shallow belongs_to assocations don't work when the
+    # base_url contains a path part.
+    def self._set_prefix_path(attrs)
+      paths = _belongs_to_associations.map do |a|
+        a.set_prefix_path(attrs, route_formatter)
+      end
+
+      paths.compact.join("/")
+    end
+
     self.site = Config::Cache.base_url
   end
 
