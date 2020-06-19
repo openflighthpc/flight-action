@@ -135,8 +135,8 @@ module ActionClient
                 opts.default(
                   group: false,
                   S: false,
-                  stdout: Config::Cache.print_stdout,
-                  stderr: Config::Cache.print_stderr,
+                  stdout: Config::Cache.print_stdout?,
+                  stderr: Config::Cache.print_stderr?,
                 )
                 opts.default(prefix: opts.group)
                 hash_opts = opts.__hash__.tap { |h| h.delete(:trace) }
