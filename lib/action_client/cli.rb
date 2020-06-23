@@ -38,7 +38,7 @@ module ActionClient
     def run
       namespace = ENV['FLIGHT_ACTION_NAMESPACE']
 
-      program :name, namespace ? "flight-#{namespace}" : 'flight-action'
+      program :name, program_name(namespace)
       program :version, ActionClient::VERSION
       program :description, program_description
       program :help_paging, false
@@ -60,6 +60,12 @@ module ActionClient
     end
 
     private
+
+    def program_name(namespace)
+      ENV.fetch('FLIGHT_PROGRAM_NAME') do
+        namespace ? "flight-#{namespace}" : 'flight-action'
+      end
+    end
 
     def program_description
       ENV.fetch(
@@ -140,13 +146,13 @@ module ActionClient
           #{program(:name)} #{cmd_name} NAME
           SYNTAX
           c.summary = cmd.summary
-          c.description = cmd.description
+          c.description = cmd.description.chomp
           c.option '-g', '--group', 'Run over the group of nodes given by NAME'
-          c.option '-o', '--output DIRECTORY',
-            'Save the results within the given directory'
-          c.option '--[no-]prefix', 'Disable hostname: prefix on lines of output.'
-          c.option '-S', 'Return the largest of the command return values.'
-          unless Config::Cache.hide_print_flags?
+          if namespace.nil?
+            c.option '-o', '--output DIRECTORY',
+              'Save the results within the given directory'
+            c.option '--[no-]prefix', 'Disable hostname: prefix on lines of output.'
+            c.option '-S', 'Return the largest of the command return values.'
             c.option '--[no-]stdout', 'Display stdout'
             c.option '--[no-]stderr', 'Display stderr'
           end
