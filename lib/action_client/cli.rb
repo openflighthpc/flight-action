@@ -30,7 +30,7 @@
 require 'commander'
 
 module ActionClient
-  VERSION = '0.3.2'
+  VERSION = '0.3.3'
 
   class CLI
     include Commander::Methods
