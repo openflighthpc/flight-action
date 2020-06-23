@@ -87,6 +87,26 @@ flight-action <cmd> slave1 -output /path/to/dir
 flight-action <cmd> --group gpus -o relative/path/from/working/dir
 ```
 
+## Tailored usage
+
+`flight-action` also supports a tailored usage mode.  In tailored usage mode
+the available commands and options are limited to provide a more tailored user
+experience.
+
+To start `flight-action` in tailored usage mode, set the environment variable
+`FLIGHT_ACTION_NAMESPACE` and optionally `FLIGHT_ACTION_DESCRIPTION`.  In
+tailored usage mode, only commands matching the prefix
+`${FLIGHT_ACTION_NAMESPACE}-` are available.
+
+For example a power-action command could be created using the following bash
+function.
+
+```
+function power-action() {
+  FLIGHT_ACTION_NAMESPACE=power FLIGHT_ACTION_DESCRIPTION="Execute power ations" flight-action "$@"
+}
+```
+
 # Contributing
 
 Fork the project. Make your feature addition or bug fix. Send a pull
