@@ -38,14 +38,6 @@ print_stdout: true
 print_stderr: true
 
 # =============================================================================
-# Hide Print Flags [OPTIONAL]
-# Hides the print flags from the CLI. This means the print_stdout and
-# print_stderr configuration options will solely determine how the application
-# prints
-# =============================================================================
-hide_print_flags:
-
-# =============================================================================
 # Debugging Mode [Development Purposes Only]
 # Enable the development tools for debugging purposes
 # =============================================================================

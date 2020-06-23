@@ -59,7 +59,6 @@ module ActionClient
 
     property :base_url
     property :debug,            default: false
-    property :hide_print_flags, default: false
     property :jwt_token,        default: ''
     property :print_stderr,     default: true
     property :print_stdout,     default: true
@@ -67,7 +66,6 @@ module ActionClient
 
     [
       :debug,
-      :hide_print_flags,
       :print_stderr,
       :print_stdout,
       :verify_ssl,
