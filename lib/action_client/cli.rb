@@ -42,7 +42,7 @@ module ActionClient
       program :version, ActionClient::VERSION
       program :description, program_description
       program :help_paging, false
-
+      default_command :help
       silent_trace!
 
       begin
