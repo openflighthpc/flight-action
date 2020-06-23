@@ -33,21 +33,42 @@ module ActionClient
   VERSION = '0.1.1'
 
   class CLI
-    extend Commander::Delegates
+    include Commander::Methods
 
-    program :name, 'flight-action'
-    program :version, ActionClient::VERSION
-    program :description, 'Run a command on a node or over a group'
-    program :help_paging, false
+    def run
+      namespace = ENV['FLIGHT_ACTION_NAMESPACE']
 
-    silent_trace!
+      program :name, namespace ? "flight-#{namespace}" : 'flight-action'
+      program :version, ActionClient::VERSION
+      program :description, program_description
+      program :help_paging, false
 
-    def self.run!
-      ARGV.push '--help' if ARGV.empty?
-      super
+      silent_trace!
+
+      begin
+        with_error_handling do
+          define_commands(namespace)
+        end
+      rescue StandardError => e
+        runner = ::Commander::Runner.instance
+        # NOTE: DO NOT give this method a block! It will set the handler!
+        handler = runner.error_handler
+        handler.call(runner, e)
+      end
+
+      run!
     end
 
-    def self.with_error_handling
+    private
+
+    def program_description
+      ENV.fetch(
+        'FLIGHT_ACTION_DESCRIPTION',
+        'Run a pre-defined command on a node or over a group.'
+      )
+    end
+
+    def with_error_handling
       yield if block_given?
     rescue Interrupt
       raise RuntimeError, 'Received Interrupt!'
@@ -75,14 +96,7 @@ module ActionClient
       end
     end
 
-    def self.cli_syntax(command, args_str = '')
-      command.hidden = true if command.name.split.length > 1
-      command.syntax = <<~SYNTAX.chomp
-        #{program(:name)} #{command.name} #{args_str}
-      SYNTAX
-    end
-
-    def self.run_remote_action(
+    def run_remote_action(
       cmd_id,
       context_id,
       exit_max_status: nil,
@@ -114,44 +128,44 @@ module ActionClient
       end
     end
 
-    begin
-      with_error_handling do
-        CommandRecord.all.each do |cmd|
-          command cmd.name do |c|
-            cli_syntax(c, 'NAME')
-            c.summary = cmd.summary
-            c.description = cmd.description
-            c.option '-g', '--group', 'Run over the group of nodes given by NAME'
-            c.option '-o', '--output DIRECTORY',
-              'Save the results within the given directory'
-            c.option '--[no-]prefix', 'Disable hostname: prefix on lines of output.'
-            c.option '-S', 'Return the largest of the command return values.'
-            unless Config::Cache.hide_print_flags?
-              c.option '--[no-]stdout', 'Display stdout'
-              c.option '--[no-]stderr', 'Display stderr'
-            end
-            c.action do |args, opts|
-              with_error_handling do
-                opts.default(
-                  group: false,
-                  S: false,
-                  stdout: Config::Cache.print_stdout?,
-                  stderr: Config::Cache.print_stderr?,
-                )
-                opts.default(prefix: opts.group)
-                hash_opts = opts.__hash__.tap { |h| h.delete(:trace) }
-                hash_opts[:exit_max_status] = hash_opts.delete(:S)
-                run_remote_action(cmd.name, args.first, **hash_opts)
-              end
+    def define_commands(namespace)
+      CommandRecord.all.each do |cmd|
+        if namespace && !cmd.name.start_with?("#{namespace}-")
+          next
+        end
+
+        cmd_name = namespace ? cmd.name.sub("#{namespace}-", '') : cmd.name
+        command cmd_name do |c|
+          c.syntax = <<~SYNTAX.chomp
+          #{program(:name)} #{cmd_name} NAME
+          SYNTAX
+          c.summary = cmd.summary
+          c.description = cmd.description
+          c.option '-g', '--group', 'Run over the group of nodes given by NAME'
+          c.option '-o', '--output DIRECTORY',
+            'Save the results within the given directory'
+          c.option '--[no-]prefix', 'Disable hostname: prefix on lines of output.'
+          c.option '-S', 'Return the largest of the command return values.'
+          unless Config::Cache.hide_print_flags?
+            c.option '--[no-]stdout', 'Display stdout'
+            c.option '--[no-]stderr', 'Display stderr'
+          end
+          c.action do |args, opts|
+            with_error_handling do
+              opts.default(
+                group: false,
+                S: false,
+                stdout: Config::Cache.print_stdout?,
+                stderr: Config::Cache.print_stderr?,
+              )
+              opts.default(prefix: opts.group)
+              hash_opts = opts.__hash__.tap { |h| h.delete(:trace) }
+              hash_opts[:exit_max_status] = hash_opts.delete(:S)
+              run_remote_action(cmd.name, args.first, **hash_opts)
             end
           end
         end
       end
-    rescue StandardError => e
-      runner = ::Commander::Runner.instance
-      handler = runner.error_handler # NOTE: DO NOT give this method a block! It will set the handler!
-      handler.call(runner, e)
     end
   end
 end
-
