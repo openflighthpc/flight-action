@@ -105,6 +105,7 @@ module ActionClient
     def run_remote_action(
       cmd_id,
       context_id,
+      *args,
       exit_max_status: nil,
       group: nil,
       output: nil,
@@ -119,7 +120,10 @@ module ActionClient
       context = (group ? GroupRecord : NodeRecord).new(id: context_id)
 
       # Create the ticket (and run the jobs)
-      ticket = TicketRecord.create(relationships: { command: command, context: context })
+      ticket = TicketRecord.create(
+        attributes: { arguments: args },
+        relationships: { command: command, context: context }
+      )
 
       unless ticket.errors.empty?
         raise UnexpectedError, ticket.errors.full_messages
@@ -143,7 +147,7 @@ module ActionClient
         cmd_name = namespace ? cmd.name.sub("#{namespace}-", '') : cmd.name
         command cmd_name do |c|
           c.syntax = <<~SYNTAX.chomp
-          #{program(:name)} #{cmd_name} NAME
+            #{program(:name)} #{cmd_name} #{cmd.syntax ? cmd.syntax : 'NAME'}
           SYNTAX
           c.summary = cmd.summary
           c.description = cmd.description.chomp
@@ -167,7 +171,7 @@ module ActionClient
               opts.default(prefix: opts.group)
               hash_opts = opts.__hash__.tap { |h| h.delete(:trace) }
               hash_opts[:exit_max_status] = hash_opts.delete(:S)
-              run_remote_action(cmd.name, args.first, **hash_opts)
+              run_remote_action(cmd.name, *args, **hash_opts)
             end
           end
         end
