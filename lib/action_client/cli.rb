@@ -171,7 +171,15 @@ module ActionClient
               opts.default(prefix: opts.group)
               hash_opts = opts.__hash__.tap { |h| h.delete(:trace) }
               hash_opts[:exit_max_status] = hash_opts.delete(:S)
-              run_remote_action(cmd.name, *args, **hash_opts)
+
+              run = ->() { run_remote_action(cmd.name, *args, **hash_opts) }
+              if cmd.confirmation
+                if HighLine.new.agree(cmd.confirmation)
+                  run.call
+                end
+              else
+                run.call
+              end
             end
           end
         end
