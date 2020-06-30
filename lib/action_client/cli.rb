@@ -172,18 +172,40 @@ module ActionClient
               hash_opts = opts.__hash__.tap { |h| h.delete(:trace) }
               hash_opts[:exit_max_status] = hash_opts.delete(:S)
 
-              run = ->() { run_remote_action(cmd.name, *args, **hash_opts) }
-              if cmd.confirmation
-                if HighLine.new.agree(cmd.confirmation)
-                  run.call
-                end
-              else
-                run.call
+              with_confirmation(cmd, args, hash_opts) do
+                run_remote_action(cmd.name, *args, **hash_opts)
               end
             end
           end
         end
       end
+    end
+
+    def with_confirmation(cmd, args, hash_opts, &block)
+      if cmd.confirmation
+        context_id = args.first
+        format_options = {}.tap do |h|
+          if hash_opts[:group]
+            h[:nodes] = "group #{context_id}"
+          else
+            h[:nodes] = "#{context_id}"
+          end
+        end
+        if highline.agree($terminal.color(cmd.confirmation % format_options, :yellow))
+          say_ok("Proceeding with request.")
+          block.call
+        else
+          say_warning("Cancelled request.")
+        end
+      else
+        block.call
+      end
+    end
+
+    delegate :say, to: :highline
+
+    def highline
+      @highline ||= HighLine.new
     end
   end
 end
