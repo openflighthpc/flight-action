@@ -160,6 +160,9 @@ module ActionClient
             c.option '--[no-]stdout', 'Display stdout'
             c.option '--[no-]stderr', 'Display stderr'
           end
+          if cmd.confirmation
+            c.option '--confirm', 'Answer yes to all questions'
+          end
           c.action do |args, opts|
             with_error_handling do
               opts.default(
@@ -182,7 +185,7 @@ module ActionClient
     end
 
     def with_confirmation(cmd, args, hash_opts, &block)
-      if cmd.confirmation
+      if cmd.confirmation && !hash_opts.delete(:confirm)
         context_id = args.first
         format_options = {}.tap do |h|
           if hash_opts[:group]
