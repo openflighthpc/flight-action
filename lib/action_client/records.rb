@@ -75,6 +75,8 @@ module ActionClient
     property :name
     property :summary
     property :description
+    property :syntax
+    property :confirmation
   end
 
   class JobRecord < BaseRecord

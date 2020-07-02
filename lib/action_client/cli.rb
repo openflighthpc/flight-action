@@ -42,7 +42,7 @@ module ActionClient
       program :version, ActionClient::VERSION
       program :description, program_description
       program :help_paging, false
-
+      default_command :help
       silent_trace!
 
       begin
@@ -105,6 +105,7 @@ module ActionClient
     def run_remote_action(
       cmd_id,
       context_id,
+      *args,
       exit_max_status: nil,
       group: nil,
       output: nil,
@@ -119,7 +120,10 @@ module ActionClient
       context = (group ? GroupRecord : NodeRecord).new(id: context_id)
 
       # Create the ticket (and run the jobs)
-      ticket = TicketRecord.create(relationships: { command: command, context: context })
+      ticket = TicketRecord.create(
+        attributes: { arguments: args },
+        relationships: { command: command, context: context }
+      )
 
       unless ticket.errors.empty?
         raise UnexpectedError, ticket.errors.full_messages
@@ -143,7 +147,7 @@ module ActionClient
         cmd_name = namespace ? cmd.name.sub("#{namespace}-", '') : cmd.name
         command cmd_name do |c|
           c.syntax = <<~SYNTAX.chomp
-          #{program(:name)} #{cmd_name} NAME
+            #{program(:name)} #{cmd_name} #{cmd.syntax ? cmd.syntax : 'NAME'}
           SYNTAX
           c.summary = cmd.summary
           c.description = cmd.description.chomp
@@ -156,6 +160,9 @@ module ActionClient
             c.option '--[no-]stdout', 'Display stdout'
             c.option '--[no-]stderr', 'Display stderr'
           end
+          if cmd.confirmation
+            c.option '--confirm', 'Answer yes to all questions'
+          end
           c.action do |args, opts|
             with_error_handling do
               opts.default(
@@ -167,11 +174,41 @@ module ActionClient
               opts.default(prefix: opts.group)
               hash_opts = opts.__hash__.tap { |h| h.delete(:trace) }
               hash_opts[:exit_max_status] = hash_opts.delete(:S)
-              run_remote_action(cmd.name, args.first, **hash_opts)
+
+              with_confirmation(cmd, args, hash_opts) do
+                run_remote_action(cmd.name, *args, **hash_opts)
+              end
             end
           end
         end
       end
+    end
+
+    def with_confirmation(cmd, args, hash_opts, &block)
+      if cmd.confirmation && !hash_opts.delete(:confirm)
+        context_id = args.first
+        format_options = {}.tap do |h|
+          if hash_opts[:group]
+            h[:nodes] = "group #{context_id}"
+          else
+            h[:nodes] = "#{context_id}"
+          end
+        end
+        if highline.agree($terminal.color(cmd.confirmation % format_options, :yellow))
+          say_ok("Proceeding with request.")
+          block.call
+        else
+          say_warning("Cancelled request.")
+        end
+      else
+        block.call
+      end
+    end
+
+    delegate :say, to: :highline
+
+    def highline
+      @highline ||= HighLine.new
     end
   end
 end
