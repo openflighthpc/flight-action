@@ -3,7 +3,7 @@
 #==============================================================================
 # Copyright (C) 2020-present Alces Flight Ltd.
 #
-# This file is part of Action Client.
+# This file is part of Flight Action.
 #
 # This program and the accompanying materials are made available under
 # the terms of the Eclipse Public License 2.0 which is available at
@@ -11,7 +11,7 @@
 # terms made available by Alces Flight Ltd - please direct inquiries
 # about licensing to licensing@alces-flight.com.
 #
-# Action Client is distributed in the hope that it will be useful, but
+# Flight Action is distributed in the hope that it will be useful, but
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, EITHER EXPRESS OR
 # IMPLIED INCLUDING, WITHOUT LIMITATION, ANY WARRANTIES OR CONDITIONS
 # OF TITLE, NON-INFRINGEMENT, MERCHANTABILITY OR FITNESS FOR A
@@ -19,12 +19,12 @@
 # details.
 #
 # You should have received a copy of the Eclipse Public License 2.0
-# along with Action Client. If not, see:
+# along with Flight Action. If not, see:
 #
 #  https://opensource.org/licenses/EPL-2.0
 #
-# For more information on Action Client, please visit:
-# https://github.com/openflighthpc/action-client-ruby
+# For more information on Flight Action, please visit:
+# https://github.com/openflighthpc/flight-action
 #===============================================================================
 
 task :require do
@@ -39,18 +39,18 @@ task :require do
   require 'active_support/core_ext/module/delegation'
 
 
-  require 'action_client/config'
+  require 'flight_action/config'
 
-  if ActionClient::Config::Cache.debug?
+  if FlightAction::Config::Cache.debug?
     require 'pry'
     require 'pry-byebug'
   end
 
-  require 'action_client/patches'
-  require 'action_client/errors'
-  require 'action_client/formatter'
-  require 'action_client/records'
-  require 'action_client/cli'
+  require 'flight_action/patches'
+  require 'flight_action/errors'
+  require 'flight_action/formatter'
+  require 'flight_action/records'
+  require 'flight_action/cli'
 end
 
 task console: :require do

@@ -1,4 +1,4 @@
-# Action Client
+# Flight Action
 
 Plugin command line for running commands over nodes
 
@@ -19,8 +19,8 @@ The following are required to run this application:
 Start by cloning the repo, adding the binaries to your path, and install the gems:
 
 ```
-git clone https://github.com/openflighthpc/action-client-ruby
-cd action-client-ruby
+git clone https://github.com/openflighthpc/flight-action
+cd flight-action
 bundle install --without development test --path vendor
 ```
 
@@ -121,5 +121,5 @@ Copyright (C) 2019-present Alces Flight Ltd.
 
 This program and the accompanying materials are made available under the terms of the Eclipse Public License 2.0 which is available at https://www.eclipse.org/legal/epl-2.0, or alternative license terms made available by Alces Flight Ltd - please direct inquiries about licensing to licensing@alces-flight.com.
 
-ActionClient is distributed in the hope that it will be useful, but WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED INCLUDING, WITHOUT LIMITATION, ANY WARRANTIES OR CONDITIONS OF TITLE, NON-INFRINGEMENT, MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE. See the Eclipse Public License 2.0 for more details.
+Flight Action is distributed in the hope that it will be useful, but WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED INCLUDING, WITHOUT LIMITATION, ANY WARRANTIES OR CONDITIONS OF TITLE, NON-INFRINGEMENT, MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE. See the Eclipse Public License 2.0 for more details.
 

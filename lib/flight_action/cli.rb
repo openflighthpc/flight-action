@@ -3,7 +3,7 @@
 #==============================================================================
 # Copyright (C) 2020-present Alces Flight Ltd.
 #
-# This file is part of Action Client.
+# This file is part of Flight Action.
 #
 # This program and the accompanying materials are made available under
 # the terms of the Eclipse Public License 2.0 which is available at
@@ -11,7 +11,7 @@
 # terms made available by Alces Flight Ltd - please direct inquiries
 # about licensing to licensing@alces-flight.com.
 #
-# Action Client is distributed in the hope that it will be useful, but
+# Flight Action is distributed in the hope that it will be useful, but
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, EITHER EXPRESS OR
 # IMPLIED INCLUDING, WITHOUT LIMITATION, ANY WARRANTIES OR CONDITIONS
 # OF TITLE, NON-INFRINGEMENT, MERCHANTABILITY OR FITNESS FOR A
@@ -19,17 +19,17 @@
 # details.
 #
 # You should have received a copy of the Eclipse Public License 2.0
-# along with Action Client. If not, see:
+# along with Flight Action. If not, see:
 #
 #  https://opensource.org/licenses/EPL-2.0
 #
-# For more information on Action Client, please visit:
-# https://github.com/openflighthpc/action-client-ruby
+# For more information on Flight Action, please visit:
+# https://github.com/openflighthpc/flight-action
 #===============================================================================
 
 require 'commander'
 
-module ActionClient
+module FlightAction
   VERSION = '0.3.3'
 
   class CLI
@@ -39,7 +39,7 @@ module ActionClient
       namespace = ENV['FLIGHT_ACTION_NAMESPACE']
 
       program :name, program_name(namespace)
-      program :version, ActionClient::VERSION
+      program :version, FlightAction::VERSION
       program :description, program_description
       program :help_paging, false
       default_command :help
@@ -82,7 +82,7 @@ module ActionClient
       new_error_class = case e
                         when JsonApiClient::Errors::ConnectionError
                           nil
-                        when JsonApiClient::Errors::NotFound, ActionClient::NotFound
+                        when JsonApiClient::Errors::NotFound, FlightAction::NotFound
                           nil
                         when JsonApiClient::Errors::ClientError
                           ClientError
