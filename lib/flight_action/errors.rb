@@ -41,6 +41,11 @@ module FlightAction
   end
   class ClientError < BaseError; end
   class InternalServerError < BaseError; end
+  class ConnectionError < BaseError
+    def initialize(msg = nil)
+      super('Unable to connect to Flight Action API')
+    end
+  end
 
   # A replacement for JsonApiClient::Errors::NotFound that doesn't throw away
   # the response.  This allows the error message to be inspected to determine

@@ -55,6 +55,7 @@ module FlightAction
 
   BaseRecord.connection_options[:status_handlers] = {
     404 => ->(env) { raise FlightAction::NotFound, env },
+    502 => ->(env) { raise FlightAction::ConnectionError },
   }
 
   BaseRecord.connection do |connection|

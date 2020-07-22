@@ -79,26 +79,31 @@ module FlightAction
     rescue Interrupt
       raise RuntimeError, 'Received Interrupt!'
     rescue StandardError => e
-      new_error_class = case e
-                        when JsonApiClient::Errors::ConnectionError
-                          nil
-                        when JsonApiClient::Errors::NotFound, FlightAction::NotFound
-                          nil
-                        when JsonApiClient::Errors::ClientError
-                          ClientError
-                        when JsonApiClient::Errors::ServerError
-                          InternalServerError
-                        else
-                          nil
-                        end
-      if new_error_class && e.env.response_headers['content-type'] == 'application/vnd.api+json'
-        raise new_error_class, <<~MESSAGE.chomp
-          #{e.env.body['errors'].map do |e| e['detail'] end.join("\n\n")}
-        MESSAGE
-      elsif e.is_a? JsonApiClient::Errors::NotFound
-        raise ClientError, 'Resource Not Found'
+      raise_new = lambda do |new_error_class, ex|
+        is_json_api_response =
+          begin
+            ex.env.response_headers['content-type'] == 'application/vnd.api+json'
+          rescue
+            false
+          end
+        if is_json_api_response
+          raise new_error_class, <<~MESSAGE.chomp
+          #{ex.env.body['errors'].map do |error| error['detail'] end.join("\n\n")}
+          MESSAGE
+        else
+          raise new_error_class
+        end
+      end
+
+      case e
+      when JsonApiClient::Errors::ClientError
+        raise_new.call(ClientError, e)
+      when JsonApiClient::Errors::ServerError
+        raise_new.call(InternalServerError, e)
+      when JsonApiClient::Errors::ConnectionError
+        raise_new.call(ConnectionError, e)
       else
-        raise e
+        raise
       end
     end
 
