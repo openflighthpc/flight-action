@@ -63,6 +63,7 @@ module FlightAction
     property :print_stderr,     default: true
     property :print_stdout,     default: true
     property :verify_ssl,       default: true
+    property :timeout,          default: 60 * 5  # 5 minutes
 
     [
       :debug,

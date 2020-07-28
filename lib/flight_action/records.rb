@@ -62,6 +62,7 @@ module FlightAction
     connection.use Faraday::Response::Logger if ENV.fetch('DEBUG', false)
     connection.faraday.authorization :Bearer, Config::Cache.jwt_token
     connection.faraday.ssl.verify = Config::Cache.verify_ssl?
+    connection.faraday.options.timeout = Config::Cache.timeout
   end
 
   class NodeRecord < BaseRecord

@@ -28,6 +28,12 @@ jwt_token:
 verify_ssl: true
 
 # =============================================================================
+# Timeout [OPTIONAL]
+# Timeout in seconds for HTTP(S) connections.  Default 5 minutes.
+# =============================================================================
+# timeout:
+
+# =============================================================================
 # Default streams to print
 # Specify which streams to print by default.
 #
