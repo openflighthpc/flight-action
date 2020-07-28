@@ -37,6 +37,7 @@ gem 'json_api_client'
 gem 'hashie'
 gem 'tty-editor'
 gem 'tty-table'
+gem 'whirly'
 
 group :development do
   gem 'pry'

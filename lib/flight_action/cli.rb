@@ -28,6 +28,7 @@
 #===============================================================================
 
 require 'commander'
+require 'whirly'
 
 module FlightAction
   VERSION = '0.3.3'
@@ -118,29 +119,40 @@ module FlightAction
       stderr: nil,
       stdout: nil
     )
-      streams = { stdout: stdout, stderr: stderr }.select { |_, v| v }.keys
+      ticket = whirly do
+        create_ticket(cmd_id, context_id, *args, group: group)
+      end
+      display_output(ticket, stdout: stdout, stderr: stderr, output: output, prefix: prefix)
+      if exit_max_status
+        exit ticket.jobs.map(&:status).max
+      end
+    end
 
+    def create_ticket(
+      cmd_id,
+      context_id,
+      *args,
+      group: nil
+    )
       # Build the associated objects for the request
       command = CommandRecord.new(id: cmd_id)
       context = (group ? GroupRecord : NodeRecord).new(id: context_id)
-
       # Create the ticket (and run the jobs)
       ticket = TicketRecord.create(
         attributes: { arguments: args },
         relationships: { command: command, context: context }
       )
-
       unless ticket.errors.empty?
         raise UnexpectedError, ticket.errors.full_messages
       end
+      ticket
+    end
 
+    def display_output(ticket, stdout: nil, stderr: nil, output: nil, prefix: nil)
+      streams = { stdout: stdout, stderr: stderr }.select { |_, v| v }.keys
       Formatter
         .new(jobs: ticket.jobs, streams: streams, output_dir: output, prefix: prefix)
         .run
-
-      if exit_max_status
-        exit ticket.jobs.map(&:status).max
-      end
     end
 
     def define_commands(namespace)
@@ -200,7 +212,6 @@ module FlightAction
           end
         end
         if highline.agree($terminal.color(cmd.confirmation % format_options, :yellow))
-          say_ok("Proceeding with request.")
           block.call
         else
           say_warning("Cancelled request.")
@@ -214,6 +225,23 @@ module FlightAction
 
     def highline
       @highline ||= HighLine.new
+    end
+
+    def whirly(&block)
+      if $stdout.tty?
+        r = nil
+        Whirly.start(
+          spinner: 'star',
+          remove_after_stop: true,
+          append_newline: false,
+          status: "Proceeding with request...",
+        ) do
+          r = block.call
+        end
+        r
+      else
+        block.call
+      end
     end
   end
 end

@@ -80,6 +80,8 @@ GEM
       thread_safe (~> 0.1)
     unicode-display_width (1.6.1)
     unicode_utils (1.4.0)
+    whirly (0.2.6)
+      unicode-display_width (~> 1.1)
     wisper (2.0.1)
     zeitwerk (2.2.2)
 
@@ -95,6 +97,7 @@ DEPENDENCIES
   pry-byebug
   tty-editor
   tty-table
+  whirly
 
 BUNDLED WITH
    2.1.4
