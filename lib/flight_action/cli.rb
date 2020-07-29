@@ -119,13 +119,26 @@ module FlightAction
       stderr: nil,
       stdout: nil
     )
-      ticket = whirly do
-        create_ticket(cmd_id, context_id, *args, group: group)
+      whirly_start
+      ticket = create_ticket(cmd_id, context_id, *args, group: group)
+      uri = URI("#{ticket.class.site}#{ticket.links.output_stream}")
+      request = Net::HTTP::Get.new uri
+      request['authorization'] = "Bearer #{Config::Cache.jwt_token}"
+      Net::HTTP.start(uri.host, uri.port) do |http|
+        http.request request do |response|
+          response.read_body do |chunk|
+            # We've got our first bit of streaming data back.  We can stop the
+            # whirly.
+            whirly_stop
+            print chunk
+          end
+        end
       end
-      display_output(ticket, stdout: stdout, stderr: stderr, output: output, prefix: prefix)
       if exit_max_status
         exit ticket.jobs.map(&:status).max
       end
+    ensure
+      whirly_stop
     end
 
     def create_ticket(
@@ -146,13 +159,6 @@ module FlightAction
         raise UnexpectedError, ticket.errors.full_messages
       end
       ticket
-    end
-
-    def display_output(ticket, stdout: nil, stderr: nil, output: nil, prefix: nil)
-      streams = { stdout: stdout, stderr: stderr }.select { |_, v| v }.keys
-      Formatter
-        .new(jobs: ticket.jobs, streams: streams, output_dir: output, prefix: prefix)
-        .run
     end
 
     def define_commands(namespace)
@@ -227,21 +233,19 @@ module FlightAction
       @highline ||= HighLine.new
     end
 
-    def whirly(&block)
-      if $stdout.tty?
-        r = nil
-        Whirly.start(
-          spinner: 'star',
-          remove_after_stop: true,
-          append_newline: false,
-          status: "Proceeding with request...",
-        ) do
-          r = block.call
-        end
-        r
-      else
-        block.call
-      end
+    def whirly_start
+      return unless $stdout.tty?
+      Whirly.start(
+        spinner: 'star',
+        remove_after_stop: true,
+        append_newline: false,
+        status: "Proceeding with request...",
+      )
+    end
+
+    def whirly_stop
+      return unless $stdout.tty?
+      Whirly.stop
     end
   end
 end
