@@ -112,12 +112,7 @@ module FlightAction
       cmd_id,
       context_id,
       *args,
-      exit_max_status: nil,
-      group: nil,
-      output: nil,
-      prefix: nil,
-      stderr: nil,
-      stdout: nil
+      group: nil
     )
       whirly_start
       ticket = create_ticket(cmd_id, context_id, *args, group: group)
@@ -133,9 +128,6 @@ module FlightAction
             print chunk
           end
         end
-      end
-      if exit_max_status
-        exit ticket.jobs.map(&:status).max
       end
     ensure
       whirly_stop
@@ -175,28 +167,13 @@ module FlightAction
           c.summary = cmd.summary
           c.description = cmd.description.chomp
           c.option '-g', '--group', 'Run over the group of nodes given by NAME'
-          if namespace.nil?
-            c.option '-o', '--output DIRECTORY',
-              'Save the results within the given directory'
-            c.option '--[no-]prefix', 'Disable hostname: prefix on lines of output.'
-            c.option '-S', 'Return the largest of the command return values.'
-            c.option '--[no-]stdout', 'Display stdout'
-            c.option '--[no-]stderr', 'Display stderr'
-          end
           if cmd.confirmation
             c.option '--confirm', 'Answer yes to all questions'
           end
           c.action do |args, opts|
             with_error_handling do
-              opts.default(
-                group: false,
-                S: false,
-                stdout: Config::Cache.print_stdout?,
-                stderr: Config::Cache.print_stderr?,
-              )
-              opts.default(prefix: opts.group)
+              opts.default(group: false)
               hash_opts = opts.__hash__.tap { |h| h.delete(:trace) }
-              hash_opts[:exit_max_status] = hash_opts.delete(:S)
 
               with_confirmation(cmd, args, hash_opts) do
                 run_remote_action(cmd.name, *args, **hash_opts)
