@@ -27,11 +27,34 @@
 # For more information on Flight Action, please visit:
 # https://github.com/openflighthpc/flight-action
 #===============================================================================
+begin
+  lib_dir = File.expand_path(File.join(__FILE__, '../../lib'))
+  $LOAD_PATH.unshift(lib_dir)
+  ENV['BUNDLE_GEMFILE'] ||= File.join(__FILE__, '../../Gemfile')
 
-require 'rake'
-load File.expand_path('../Rakefile', __dir__)
+  require 'rubygems'
+  require 'bundler'
 
-Rake::Task[:require].invoke
+  Bundler.setup(:default)
 
-FlightAction::CLI.new.run if $PROGRAM_NAME == __FILE__
+  require 'active_support/core_ext/string'
+  require 'active_support/core_ext/module'
+  require 'active_support/core_ext/module/delegation'
 
+  require 'flight_action/config'
+
+  require 'flight_action/patches'
+  require 'flight_action/errors'
+  require 'flight_action/records'
+  require 'flight_action/cli'
+
+  Dir.chdir(ENV.fetch('FLIGHT_CWD','.'))
+  FlightAction::CLI.new.run
+rescue Interrupt
+  if Kernel.const_defined?(:Paint)
+    $stderr.puts "\n#{Paint['WARNING', :underline, :yellow]}: Cancelled by user"
+  else
+    $stderr.puts "\nWARNING: Cancelled by user"
+  end
+  exit(130)
+end
