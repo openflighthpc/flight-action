@@ -39,6 +39,7 @@ module FlightAction
     def run
       namespace = ENV['FLIGHT_ACTION_NAMESPACE']
 
+      program :application, program_name(namespace)
       program :name, program_name(namespace)
       program :version, FlightAction::VERSION
       program :description, program_description
