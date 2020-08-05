@@ -120,7 +120,10 @@ module FlightAction
       uri = URI("#{ticket.class.site}#{ticket.links.output_stream}")
       request = Net::HTTP::Get.new uri
       request['authorization'] = "Bearer #{Config::Cache.jwt_token}"
-      Net::HTTP.start(uri.host, uri.port) do |http|
+      Net::HTTP.start(uri.host, uri.port, use_ssl: uri.scheme == 'https') do |http|
+        if http.use_ssl? && !Config::Cache.verify_ssl?
+          http.verify_mode = OpenSSL::SSL::VERIFY_NONE
+        end
         http.request request do |response|
           response.read_body do |chunk|
             # We've got our first bit of streaming data back.  We can stop the
