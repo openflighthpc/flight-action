@@ -112,20 +112,25 @@ module FlightAction
       cmd_id,
       context_id,
       *args,
-      exit_max_status: nil,
-      group: nil,
-      output: nil,
-      prefix: nil,
-      stderr: nil,
-      stdout: nil
+      group: nil
     )
-      ticket = whirly do
-        create_ticket(cmd_id, context_id, *args, group: group)
+      whirly_start
+      ticket = create_ticket(cmd_id, context_id, *args, group: group)
+      uri = URI("#{ticket.class.site}#{ticket.links.output_stream}")
+      request = Net::HTTP::Get.new uri
+      request['authorization'] = "Bearer #{Config::Cache.jwt_token}"
+      Net::HTTP.start(uri.host, uri.port) do |http|
+        http.request request do |response|
+          response.read_body do |chunk|
+            # We've got our first bit of streaming data back.  We can stop the
+            # whirly.
+            whirly_stop
+            print chunk
+          end
+        end
       end
-      display_output(ticket, stdout: stdout, stderr: stderr, output: output, prefix: prefix)
-      if exit_max_status
-        exit ticket.jobs.map(&:status).max
-      end
+    ensure
+      whirly_stop
     end
 
     def create_ticket(
@@ -148,13 +153,6 @@ module FlightAction
       ticket
     end
 
-    def display_output(ticket, stdout: nil, stderr: nil, output: nil, prefix: nil)
-      streams = { stdout: stdout, stderr: stderr }.select { |_, v| v }.keys
-      Formatter
-        .new(jobs: ticket.jobs, streams: streams, output_dir: output, prefix: prefix)
-        .run
-    end
-
     def define_commands(namespace)
       CommandRecord.all.each do |cmd|
         if namespace && !cmd.name.start_with?("#{namespace}-")
@@ -169,28 +167,13 @@ module FlightAction
           c.summary = cmd.summary
           c.description = cmd.description.chomp
           c.option '-g', '--group', 'Run over the group of nodes given by NAME'
-          if namespace.nil?
-            c.option '-o', '--output DIRECTORY',
-              'Save the results within the given directory'
-            c.option '--[no-]prefix', 'Disable hostname: prefix on lines of output.'
-            c.option '-S', 'Return the largest of the command return values.'
-            c.option '--[no-]stdout', 'Display stdout'
-            c.option '--[no-]stderr', 'Display stderr'
-          end
           if cmd.confirmation
             c.option '--confirm', 'Answer yes to all questions'
           end
           c.action do |args, opts|
             with_error_handling do
-              opts.default(
-                group: false,
-                S: false,
-                stdout: Config::Cache.print_stdout?,
-                stderr: Config::Cache.print_stderr?,
-              )
-              opts.default(prefix: opts.group)
+              opts.default(group: false)
               hash_opts = opts.__hash__.tap { |h| h.delete(:trace) }
-              hash_opts[:exit_max_status] = hash_opts.delete(:S)
 
               with_confirmation(cmd, args, hash_opts) do
                 run_remote_action(cmd.name, *args, **hash_opts)
@@ -227,21 +210,19 @@ module FlightAction
       @highline ||= HighLine.new
     end
 
-    def whirly(&block)
-      if $stdout.tty?
-        r = nil
-        Whirly.start(
-          spinner: 'star',
-          remove_after_stop: true,
-          append_newline: false,
-          status: "Proceeding with request...",
-        ) do
-          r = block.call
-        end
-        r
-      else
-        block.call
-      end
+    def whirly_start
+      return unless $stdout.tty?
+      Whirly.start(
+        spinner: 'star',
+        remove_after_stop: true,
+        append_newline: false,
+        status: "Proceeding with request...",
+      )
+    end
+
+    def whirly_stop
+      return unless $stdout.tty?
+      Whirly.stop
     end
   end
 end

@@ -28,14 +28,10 @@ jwt_token:
 verify_ssl: true
 
 # =============================================================================
-# Default streams to print
-# Specify which streams to print by default.
-#
-# These fields can be overridden on the command line using the flags:
-#   --[no-]stdout, --[no-]stderr
+# Timeout [OPTIONAL]
+# Timeout in seconds for HTTP(S) connections.  Default 5 minutes.
 # =============================================================================
-print_stdout: true
-print_stderr: true
+# timeout:
 
 # =============================================================================
 # Debugging Mode [Development Purposes Only]

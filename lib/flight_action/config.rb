@@ -60,14 +60,11 @@ module FlightAction
     property :base_url
     property :debug,            default: false
     property :jwt_token,        default: ''
-    property :print_stderr,     default: true
-    property :print_stdout,     default: true
     property :verify_ssl,       default: true
+    property :timeout,          default: 60 * 5  # 5 minutes
 
     [
       :debug,
-      :print_stderr,
-      :print_stdout,
       :verify_ssl,
     ].each do |m|
       define_method("#{m}?") { public_send(m) ? true : false }

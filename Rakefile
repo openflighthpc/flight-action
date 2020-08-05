@@ -48,7 +48,6 @@ task :require do
 
   require 'flight_action/patches'
   require 'flight_action/errors'
-  require 'flight_action/formatter'
   require 'flight_action/records'
   require 'flight_action/cli'
 end
