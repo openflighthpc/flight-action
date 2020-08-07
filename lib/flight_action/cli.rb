@@ -117,13 +117,16 @@ module FlightAction
     )
       whirly_start
       ticket = create_ticket(cmd_id, context_id, *args, group: group)
+
       uri = URI("#{ticket.class.site}#{ticket.links.output_stream}")
       request = Net::HTTP::Get.new uri
       request['authorization'] = "Bearer #{Config::Cache.jwt_token}"
-      Net::HTTP.start(uri.host, uri.port, use_ssl: uri.scheme == 'https') do |http|
-        if http.use_ssl? && !Config::Cache.verify_ssl?
-          http.verify_mode = OpenSSL::SSL::VERIFY_NONE
-        end
+      use_ssl = uri.scheme == 'https'
+      verify_mode = Config::Cache.verify_ssl? ?
+        OpenSSL::SSL::VERIFY_PEER :
+        OpenSSL::SSL::VERIFY_NONE
+
+      Net::HTTP.start(uri.host, uri.port, use_ssl: use_ssl, verify_mode: verify_mode) do |http|
         http.request request do |response|
           response.read_body do |chunk|
             # We've got our first bit of streaming data back.  We can stop the
