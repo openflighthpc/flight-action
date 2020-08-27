@@ -173,7 +173,9 @@ module FlightAction
           SYNTAX
           c.summary = cmd.summary
           c.description = cmd.description.chomp
-          c.option '-g', '--group', 'Run over the group of nodes given by NAME'
+          if cmd.has_context
+            c.option '-g', '--group', 'Run over the group of nodes given by NAME'
+          end
           if cmd.confirmation
             c.option '--confirm', 'Answer yes to all questions'
           end

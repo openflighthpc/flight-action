@@ -79,6 +79,7 @@ module FlightAction
     property :description
     property :syntax
     property :confirmation
+    property :has_context
   end
 
   class JobRecord < BaseRecord
