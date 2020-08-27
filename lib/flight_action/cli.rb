@@ -147,12 +147,18 @@ module FlightAction
       group: nil
     )
       # Build the associated objects for the request
+      # NOTE: Not all commands will have a context, however this has been added retrospectively
       command = CommandRecord.new(id: cmd_id)
-      context = (group ? GroupRecord : NodeRecord).new(id: context_id)
+      context = if context_id
+        (group ? GroupRecord : NodeRecord).new(id: context_id)
+      else
+        nil
+      end
+
       # Create the ticket (and run the jobs)
       ticket = TicketRecord.create(
         attributes: { arguments: args },
-        relationships: { command: command, context: context }
+        relationships: { command: command }.tap { |r| r[:context] = context if context }
       )
       unless ticket.errors.empty?
         raise UnexpectedError, ticket.errors.full_messages
@@ -185,7 +191,11 @@ module FlightAction
               hash_opts = opts.__hash__.tap { |h| h.delete(:trace) }
 
               with_confirmation(cmd, args, hash_opts) do
-                run_remote_action(cmd.name, *args, **hash_opts)
+                if cmd.has_context
+                  run_remote_action(cmd.name, *args, **hash_opts)
+                else
+                  run_remote_action(cmd.name, nil, *args, **hash_opts)
+                end
               end
             end
           end
