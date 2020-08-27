@@ -30,9 +30,9 @@
 require 'commander'
 require 'whirly'
 
-module FlightAction
-  VERSION = '1.1.0-rc3'
+require_relative 'version'
 
+module FlightAction
   class CLI
     include Commander::Methods
 
