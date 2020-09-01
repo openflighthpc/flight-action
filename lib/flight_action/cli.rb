@@ -179,7 +179,7 @@ module FlightAction
           SYNTAX
           c.summary = cmd.summary
           c.description = cmd.description.chomp
-          if cmd.has_context
+          if cmd['has-context']
             c.option '-g', '--group', 'Run over the group of nodes given by NAME'
           end
           if cmd.confirmation
