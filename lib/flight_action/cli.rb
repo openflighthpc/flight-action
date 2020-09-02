@@ -191,7 +191,7 @@ module FlightAction
               hash_opts = opts.__hash__.tap { |h| h.delete(:trace) }
 
               with_confirmation(cmd, args, hash_opts) do
-                if cmd.has_context
+                if cmd['has-context']
                   run_remote_action(cmd.name, *args, **hash_opts)
                 else
                   run_remote_action(cmd.name, nil, *args, **hash_opts)
@@ -205,14 +205,13 @@ module FlightAction
 
     def with_confirmation(cmd, args, hash_opts, &block)
       if cmd.confirmation && !hash_opts.delete(:confirm)
-        context_id = args.first
-        format_options = {}.tap do |h|
-          if hash_opts[:group]
-            h[:nodes] = "group #{context_id}"
-          else
-            h[:nodes] = "#{context_id}"
-          end
-        end
+        format_options = if cmd['has-context'] && hash_opts[:group]
+                           { nodes: "group #{args.first}" }
+                         elsif cmd['has-context']
+                           { nodes: args.first }
+                         else
+                           {}
+                         end
         if highline.agree($terminal.color(cmd.confirmation % format_options, :yellow))
           block.call
         else
