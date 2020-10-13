@@ -30,9 +30,9 @@
 require 'commander'
 require 'whirly'
 
-module FlightAction
-  VERSION = '1.1.0-rc3'
+require_relative 'version'
 
+module FlightAction
   class CLI
     include Commander::Methods
 
@@ -147,12 +147,18 @@ module FlightAction
       group: nil
     )
       # Build the associated objects for the request
+      # NOTE: Not all commands will have a context, however this has been added retrospectively
       command = CommandRecord.new(id: cmd_id)
-      context = (group ? GroupRecord : NodeRecord).new(id: context_id)
+      context = if context_id
+        (group ? GroupRecord : NodeRecord).new(id: context_id)
+      else
+        nil
+      end
+
       # Create the ticket (and run the jobs)
       ticket = TicketRecord.create(
         attributes: { arguments: args },
-        relationships: { command: command, context: context }
+        relationships: { command: command }.tap { |r| r[:context] = context if context }
       )
       unless ticket.errors.empty?
         raise UnexpectedError, ticket.errors.full_messages
@@ -173,7 +179,9 @@ module FlightAction
           SYNTAX
           c.summary = cmd.summary
           c.description = cmd.description.chomp
-          c.option '-g', '--group', 'Run over the group of nodes given by NAME'
+          if cmd['has-context']
+            c.option '-g', '--group', 'Run over the group of nodes given by NAME'
+          end
           if cmd.confirmation
             c.option '--confirm', 'Answer yes to all questions'
           end
@@ -183,7 +191,11 @@ module FlightAction
               hash_opts = opts.__hash__.tap { |h| h.delete(:trace) }
 
               with_confirmation(cmd, args, hash_opts) do
-                run_remote_action(cmd.name, *args, **hash_opts)
+                if cmd['has-context']
+                  run_remote_action(cmd.name, *args, **hash_opts)
+                else
+                  run_remote_action(cmd.name, nil, *args, **hash_opts)
+                end
               end
             end
           end
@@ -193,14 +205,13 @@ module FlightAction
 
     def with_confirmation(cmd, args, hash_opts, &block)
       if cmd.confirmation && !hash_opts.delete(:confirm)
-        context_id = args.first
-        format_options = {}.tap do |h|
-          if hash_opts[:group]
-            h[:nodes] = "group #{context_id}"
-          else
-            h[:nodes] = "#{context_id}"
-          end
-        end
+        format_options = if cmd['has-context'] && hash_opts[:group]
+                           { nodes: "group #{args.first}" }
+                         elsif cmd['has-context']
+                           { nodes: args.first }
+                         else
+                           {}
+                         end
         if highline.agree($terminal.color(cmd.confirmation % format_options, :yellow))
           block.call
         else
