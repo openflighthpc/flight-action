@@ -1,6 +1,6 @@
 /bin
 /etc/config.yaml
-
+tags
 *.orig
 
 ## Environment normalization:
