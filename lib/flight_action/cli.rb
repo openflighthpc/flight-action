@@ -27,6 +27,7 @@
 # https://github.com/openflighthpc/flight-action
 #===============================================================================
 
+require 'etc'
 require 'commander'
 require 'whirly'
 
@@ -155,9 +156,15 @@ module FlightAction
         nil
       end
 
+      passwd = Etc.getpwuid(Process.uid)
+
       # Create the ticket (and run the jobs)
       ticket = TicketRecord.create(
-        attributes: { arguments: args },
+        attributes: {
+          arguments: args,
+          request_username: passwd.name,
+          request_uid:      passwd.uid
+        },
         relationships: { command: command }.tap { |r| r[:context] = context if context }
       )
       unless ticket.errors.empty?
