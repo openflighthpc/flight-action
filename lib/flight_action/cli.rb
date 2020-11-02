@@ -50,6 +50,7 @@ module FlightAction
 
       begin
         with_error_handling do
+          define_estate_list_command(namespace)
           define_commands(namespace)
         end
       rescue StandardError => e
@@ -171,6 +172,26 @@ module FlightAction
         raise UnexpectedError, ticket.errors.full_messages
       end
       ticket
+    end
+
+    def define_estate_list_command(namespace)
+      return unless namespace == 'estate' || namespace == '' || namespace.nil?
+      prefix = namespace == 'estate' ? '' : 'estate-'
+
+      command "#{prefix}list" do |c|
+        c.syntax = <<~SYNTAX.chomp
+          #{program(:name)} list
+        SYNTAX
+        c.summary = 'List all configured nodes'
+        c.description = 'List all configured nodes'
+        c.action do |args, opts|
+          with_error_handling do
+            NodeRecord.all.each do |node|
+              puts node.name
+            end
+          end
+        end
+      end
     end
 
     def define_commands(namespace)
