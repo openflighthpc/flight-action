@@ -69,13 +69,12 @@ A detailed walk through of the commands is not possible as they are defined dyna
 flight-action <cmd> slave1
 
 # Run a command over mutliple nodes
-# (Requires exploding groups support - contact your server administrator)
-flight-action <cmd> --group node1,node3,slave[01-10]
-
-# Run a command over all the nodes in a group
-# (Requires named groups support - contact your server administrator)
-flight-action <cmd> --group gpus
+flight-action <cmd> --group node1,node3,slave0[1-9]
 ```
+
+Note: There is currently a known issue with the bracket notation used to
+express multiple nodes.  The numbers inside the bracket cannot have any
+leading zeros.
 
 ## Tailored usage
 
