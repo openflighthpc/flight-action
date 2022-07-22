@@ -76,7 +76,7 @@ GEM
       strings (~> 0.1.5)
       tty-screen (~> 0.7)
     tty-which (0.4.2)
-    tzinfo (1.2.6)
+    tzinfo (1.2.10)
       thread_safe (~> 0.1)
     unicode-display_width (1.6.1)
     unicode_utils (1.4.0)
